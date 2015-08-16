@@ -1,1 +1,1 @@
-# THRUNC: A **T**ool for the **H**istorical **Ru**ssian **N**ational **C**orpus
+## THRUNC: A Tool for the Historical Russian National Corpus
