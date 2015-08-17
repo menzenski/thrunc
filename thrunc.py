@@ -37,12 +37,12 @@
 
 from urllib import FancyURLopener
 from bs4 import BeautifulSoup as Soup
-from openpyxl import Workbook
 import re
 import time
 import random
+import openpyxl
 
-class ResultsSpreadsheet(Workbook):
+class ResultsSpreadsheet(openpyxl.Workbook):
     """Excel spreadsheet containing search results."""
 
     def __init__(self, filename):
@@ -58,9 +58,15 @@ class ResultsSpreadsheet(Workbook):
           and the values are the corresponding contents, e.g., {1: 'Modern'}.
         """
 
+
+        print "ROW:\t{}".format(row_idx)
         for k, v in dict_contents.iteritems():
             c = self.active.cell(row=row_idx, column=k)
             c.value = v
+
+            ## also print dict contents to console
+            print "{}:\t{}".format(k, v)
+        print "\n"
 
     def save_wb(self):
         """Save the ResultsSpreadsheet to disk."""
@@ -74,16 +80,17 @@ class ResultsSpreadsheet(Workbook):
             1: u"Subcorpus",
             2: u"BaseVerb",
             3: u"Lemma",
-            4: u"PrefixValue",
-            5: u"Prefix",
-            6: u"SuffixValue",
-            7: u"Suffix",
-            8: u"SourceName",
-            9: u"SourceDateBegin",
-            10: u"SourceDateMiddle",
-            11: u"SourceDateEnd",
-            12: u"NumberOfTokens",
-            13: u"ResultsPageIndex"
+            4: u"GrammaticalForm",
+            5: u"PrefixValue",
+            6: u"Prefix",
+            7: u"SuffixValue",
+            8: u"Suffix",
+            9: u"SourceName",
+            10: u"SourceDateBegin",
+            11: u"SourceDateMiddle",
+            12: u"SourceDateEnd",
+            13: u"NumberOfTokens",
+            14: u"ResultsPageIndex"
             }
 
         self.write_row(row_idx=1, dict_contents=header_dict)
@@ -133,81 +140,28 @@ class Webpage(object):
     def __init__(self, address):
         self.address = address
         myopener = MyOpener()
-        delay = random.randint(0,4)
+        delay = random.randint(1,10)
         time.sleep(delay)
-        self.html = myopener.open(self.address).read()
-        self.soup = Soup(self.html)
 
-class RussianVerb(object):
-    """Russian verb object: provides namespace for possible forms."""
-
-    def __init__(self, simplex_verb):
-
-        self.root = simplex_verb
-        self.prefixed_forms = {}
-
-        self.prefixes = {
-            # path/location prefixes
-            'o-': ['о', 'об', 'обо', 'объ'],
-            'nad-': ['над', 'надо', 'надъ'],
-            'pere-': ['пере', 'пре', 'прѣ'],
-            'pro-': ['про'],
-            'u-': ['у'],
-            'na-': ['на'],
-            # goal prefixes
-            'v-': ['в', 'во', 'въ'],
-            'pri-': ['при'],
-            'za-': ['за'],
-            'do-': ['до'],
-            's-': ['с', 'со', 'съ'],
-            # source prefixes
-            'iz-': ['из', 'изо', 'изъ'],
-            'vy-': ['вы'],
-            'ot-': ['от', 'ото', 'отъ'],
-            'voz-': ['вз', 'вс', 'воз', 'вос', 'взо', 'взъ', 'возъ'],
-            'raz-': ['раз', 'рас', 'разо', 'разъ'],
-            # po
-            'po': ['по'],
-            }
-
-        self.prefixes_with_null = self.prefixes
-        self.prefixes_with_null['—'] = ['']
-
-        self.prefixed_forms = []
-        for k, v in self.prefixes.iteritems():
-            for pfx in v:
-                self.prefixed_forms.append("{}{}".format(pfx, self.root))
-
-        self.prefixed_forms_by_prefix = {}
-        for k, v in self.prefixes.iteritems():
-            forms = [pfx + self.root for pfx in v]
-            self.prefixed_forms_by_prefix[k] = forms
-
-        self.all_forms_by_prefix = self.prefixed_forms_by_prefix
-        self.all_forms_by_prefix['—'] = ['' + self.root]
-
-
-class RNCSearchTerm(object):
-    """Container object holding all (past-tense) forms of a search term."""
-    ## we're really just providing a convenient namespace for handling terms.
-
-    def __init__(self):
-        ## the ancient corpus needs both lemmas and grammatical categories
-        self.ancient_forms = ['iperf', 'aor', 'perf', 'past']
-        self.ancient_splx_ipf = [] # simplex imperfective lemmas
-        self.ancient_pfx_pf = []   # prefixed perfective lemmas
-        self.ancient_pfx_ipf = []  # prefixed imperfective lemmas
-
-        ## the old corpus needs individual word forms only, NOT lemmas
-        self.old_splx_ipf = []     # simplex imperfective word forms
-        self.old_pfx_pf = []       # prefixed perfective word forms
-        self.old_pfx_ipf = []      # prefixed imperfective word forms
-
-        ## the modern corpus needs both lemmas and grammatical categories
-        self.modern_forms = ['praet']
-        self.modern_splx_ipf = []  # simplex imperfective lemmas
-        self.modern_pfx_pf = []    # prefixed perfective lemmas
-        self.modern_pfx_ipf = []   # prefixed imperfective lemmas
+        unsuccessful = True
+        while unsuccessful:
+            long_delay = delay * 2
+            try:
+                print "Trying with a delay of {} seconds to open\n{}\n".format(
+                    delay, self.address
+                    )
+                self.html = myopener.open(self.address).read()
+                self.soup = Soup(self.html)
+                unsuccessful = False
+            except IOError as e:
+                print "\nIOError: {}\nAddress:{}\n".format(e, self.address)
+                long_delay *= 2
+                time.sleep(long_delay)
+                print "Now trying with a longer delay of {} seconds.\n".format(
+                    long_delay
+                    )
+                self.html = myopener.open(self.address).read()
+                self.soup = Soup(self.html)
 
 class RNCQueryAncient(object):
     """Object describing a query of the Ancient RNC subcorpus."""
@@ -300,7 +254,7 @@ class RNCQueryModern(object):
             sem1="", flags1="", sem_mod1="",
             sem_mod2="", parent2=0, level2=0, min2=1,
             max2=1, lex2="", gramm2="", sem2="",
-            flags2=""):
+            flags2="", end_year=None):
         """Initialize with empty search parameters."""
 
         self.mycorp = mycorp
@@ -362,13 +316,40 @@ class RNCQueryModern(object):
             #"sem-mod2": ,
             }
 
+        # search the corpus prior to a defined end date
+        if end_year is not None:
+            self.end_year = end_year
+            self.env = "alpha"
+            self.mycorp = ("%28%28created%253A%253C%253D%"
+                "2522{}%2522%29%29".format(end_year)
+                )
+            self.mysize = 3715941
+            self.mysentsize = 215701
+            self.mydocsize = 1284
+            self.lang = "ru"
+            self.nodia = 1
+            self.m1 = ""
+            self.m2 = ""
+
+            self.params["env"] = self.env
+            self.params["mycorp"] = self.mycorp
+            self.params["mysize"] = self.mysize
+            self.params["mysentsize"] = self.mysentsize
+            self.params["mydocsize"] = self.mydocsize
+            self.params["lang"] = self.lang
+            self.params["nodia"] = self.nodia
+            self.params["m1"] = self.m1
+            self.params["m2"] = self.m2
+
+
         self.base_url = "http://search.ruscorpora.ru/search.xml?"
 
 class RNCSearch(object):
     """A search of one of the three historical RNC subcorpora."""
 
     def __init__(self, rnc_query, subcorpus="", pfx_val="",
-            sfx_val="", lem="", base_verb="", prefix="", suffix=""):
+            sfx_val="", lem="", gramm_cat="",
+            base_verb="", prefix="", suffix=""):
         """Initialize search object.
 
         Parameters
@@ -378,6 +359,7 @@ class RNCSearch(object):
           pfx_val:    'yesPrefix' or 'noPrefix'
           sfx_val:    'yesSuffix' or 'noSuffix'
           lem:        e.g., 'собирать'
+          gramm_cat:  e.g., 'praet'
           base_verb:  e.g., 'брать'
           prefix:     e.g., 'ot-'
           suffix:     e.g., '-yva-'
@@ -388,6 +370,7 @@ class RNCSearch(object):
         self.pfx_val = pfx_val
         self.sfx_val = sfx_val
         self.lem = lem
+        self.gramm_cat = gramm_cat
         self.base_verb = base_verb
         self.prefix = prefix
         self.suffix = suffix
@@ -411,8 +394,9 @@ class RNCSearch(object):
 
         Parameters
         ----------
-        soup: BeautifulSoup() object of a webpage
-        idx: number of the results page (e.g., idx=10 means p=10& in the url)
+          soup: BeautifulSoup() object of a webpage
+          idx: number of the results page (e.g., idx=10 means p=10& in the url)
+
         """
 
         sources_on_page = []
@@ -439,16 +423,17 @@ class RNCSearch(object):
                 1: "{}".format(self.subcorpus),
                 2: "{}".format(self.base_verb),
                 3: "{}".format(self.lem),
-                4: "{}".format(self.pfx_val),
-                5: "{}".format(self.prefix),
-                6: "{}".format(self.sfx_val),
-                7: "{}".format(self.suffix),
-                8: u"{}".format(source_name),
-                9: src_obj.date_begin,
-                10: src_obj.date_middle,
-                11: src_obj.date_end,
-                12: source_examples,
-                13: idx
+                4: "{}".format(self.gramm_cat),
+                5: "{}".format(self.pfx_val),
+                6: "{}".format(self.prefix),
+                7: "{}".format(self.sfx_val),
+                8: "{}".format(self.suffix),
+                9: u"{}".format(source_name),
+                10: src_obj.date_begin,
+                11: src_obj.date_middle,
+                12: src_obj.date_end,
+                13: source_examples,
+                14: idx
                 }
             self.all_search_results.append(row_dict)
 
@@ -466,15 +451,215 @@ class RNCSearch(object):
             url = self.address
             address = url + "p=" + str(page_idx) + "&"
             page = Webpage(address)
-            if page.soup.ol.find_all('li'):
-                print page_idx
-                print address
-                print "\n"
-                self.scrape_one_page(soup=page.soup, idx=page_idx)
-                page_idx += 1
+            if page.soup.ol:
+                if page.soup.ol.find_all('li'):
+                    print page_idx
+                    print address
+                    print "\n"
+                    self.scrape_one_page(soup=page.soup, idx=page_idx)
+                    page_idx += 1
 
+                else:
+                    has_more_results = False
             else:
                 has_more_results = False
+
+class RussianVerb(object):
+    """Russian verb object: provides namespace for possible forms."""
+
+    def __init__(self, simplex_verb):
+
+        self.root = simplex_verb
+        self.prefixed_forms = {}
+
+        self.prefixes = {
+            # path/location prefixes
+            'o-': ['о', 'об', 'обо', 'объ'],
+            'nad-': ['над', 'надо', 'надъ'],
+            'pere-': ['пере', 'пре', 'прѣ'],
+            'pro-': ['про'],
+            'u-': ['у'],
+            'na-': ['на'],
+            # goal prefixes
+            'v-': ['в', 'во', 'въ'],
+            'pri-': ['при'],
+            'za-': ['за'],
+            'do-': ['до'],
+            's-': ['с', 'со', 'съ'],
+            # source prefixes
+            'iz-': ['из', 'изо', 'изъ'],
+            'vy-': ['вы'],
+            'ot-': ['от', 'ото', 'отъ'],
+            'voz-': [
+                'вз', 'вс', 'воз', 'вос', 'взо', 'взъ',
+                'возъ', 'въз', 'въс', 'възъ'
+                ],
+            'raz-': ['раз', 'рас', 'разо', 'разъ'],
+            # po
+            'po': ['по'],
+            }
+
+        self.prefixes_with_null = self.prefixes
+        self.prefixes_with_null['—'] = ['']
+
+        self.prefixed_forms = []
+        for k, v in self.prefixes.iteritems():
+            for pfx in v:
+                self.prefixed_forms.append("{}{}".format(pfx, self.root))
+
+        self.prefixed_forms_by_prefix = {}
+        for k, v in self.prefixes.iteritems():
+            forms = [pfx + self.root for pfx in v]
+            self.prefixed_forms_by_prefix[k] = forms
+
+        self.all_forms_by_prefix = self.prefixed_forms_by_prefix
+        self.all_forms_by_prefix['—'] = ['' + self.root]
+
+
+class RNCSearchTerm(object):
+    """Container object holding all (past-tense) forms of a search term."""
+    ## we're really just providing a convenient namespace for handling terms.
+
+    def __init__(self, start_row=2, results_spreadsheet=None):
+        ## starting row for writing results to spreadsheet
+        self.rw = start_row
+        ## the spreadsheet to which results will be written
+        if results_spreadsheet is not None:
+            ## write to existing spreadsheet if one exists
+            self.rs = results_spreadsheet
+        else:
+            ## if one doesn't exist, create a new one with a default name
+            self.rs = ResultsSpreadsheet(filename="Results")
+
+        ## the ancient corpus needs both lemmas and grammatical categories
+        self.ancient_forms = ['iperf', 'aor', 'perf', 'past']
+        self.ancient_splx_ipf = [] # simplex imperfective lemmas
+        self.ancient_pfx_pf = []   # prefixed perfective lemmas
+        self.ancient_pfx_ipf = []  # prefixed imperfective lemmas
+
+        ## the old corpus needs individual word forms only, NOT lemmas
+        self.old_inf = ''          # base_infinitive
+        self.old_splx_ipf = []     # simplex imperfective word forms
+        self.old_pfx_pf = []       # prefixed perfective word forms
+        self.old_pfx_ipf = []      # prefixed imperfective word forms
+
+        ## the modern corpus needs both lemmas and grammatical categories
+        self.modern_forms = ['praet']
+        self.modern_splx_ipf = []  # simplex imperfective lemmas
+        self.modern_pfx_pf = []    # prefixed perfective lemmas
+        self.modern_pfx_ipf = []   # prefixed imperfective lemmas
+
+    def search_ancient(self):
+        """Search the ancient subcorpus."""
+
+        for gramm_form in self.ancient_forms:
+            for verb_form in self.ancient_splx_ipf:
+                rv = RussianVerb(simplex_verb=verb_form)
+                for pfx, vb in rv.all_forms_by_prefix.iteritems():
+                    for v in vb:
+                        query = RNCQueryAncient(
+                            lexi1=v, gramm1=gramm_form
+                            )
+
+                        if pfx == "—":
+                            pfxv = "noPrefix"
+                        else:
+                            pfxv = "yesPrefix"
+
+                        search = RNCSearch(
+                            rnc_query=query, subcorpus="Ancient",
+                            pfx_val=pfxv, prefix=pfx,
+                            sfx_val="noSuffix", lem=v,
+                            gramm_cat=gramm_form,
+                            base_verb=verb_form
+                            )
+                        search.scrape_pages()
+
+                        if self.rs:
+                            for d in search.all_search_results:
+                                for i in range(d[13]):
+                                    self.rs.write_row(
+                                        row_idx=self.rw, dict_contents=d
+                                        )
+                                    self.rw += 1
+
+    def search_old(self):
+        """Search the old subcorpus."""
+
+        for verb_form in self.old_splx_ipf:
+            rv = RussianVerb(simplex_verb=verb_form)
+            for pfx, vb in rv.all_forms_by_prefix.iteritems():
+                for v in vb:
+                    query = RNCQueryOld(
+                        req=v
+                        )
+
+                    if pfx == "—":
+                        pfxv = "noPrefix"
+                    else:
+                        pfxv = "yesPrefix"
+
+                    search = RNCSearch(
+                        rnc_query=query, subcorpus="Old",
+                        pfx_val=pfxv, prefix=pfx,
+                        sfx_val="noSuffix", lem=v,
+                        base_verb=self.old_inf
+                        )
+                    search.scrape_pages()
+
+                    if self.rs:
+                        for d in search.all_search_results:
+                            for i in range(d[13]):
+                                self.rs.write_row(
+                                    row_idx=self.rw, dict_contents=d
+                                    )
+                                self.rw += 1
+
+    def search_modern(self):
+        """Search the modern subcorpus."""
+
+        for gramm_form in self.modern_forms:
+            for verb_form in self.modern_splx_ipf:
+                rv = RussianVerb(simplex_verb=verb_form)
+                for pfx, vb in rv.all_forms_by_prefix.iteritems():
+                    for v in vb:
+                        query = RNCQueryModern(
+                            lex1=v, gramm1=gramm_form, end_year=1799
+                            )
+
+                        if pfx == "—":
+                            pfxv = "noPrefix"
+                        else:
+                            pfxv = "yesPrefix"
+
+                        search = RNCSearch(
+                            rnc_query=query, subcorpus="Modern",
+                            pfx_val=pfxv, prefix=pfx,
+                            sfx_val="noSuffix", lem=v,
+                            gramm_cat=gramm_form,
+                            base_verb=verb_form
+                            )
+                        search.scrape_pages()
+
+                        if self.rs:
+                            for d in search.all_search_results:
+                                for i in range(d[13]):
+                                    self.rs.write_row(
+                                        row_idx=self.rw, dict_contents=d
+                                        )
+                                    self.rw += 1
+
+    def search_all(self):
+        """Perform an RNCSearch for each possible word in the RNCSearchTerm."""
+
+        ## search all three subcorpora
+        self.search_ancient()
+        self.search_old()
+        self.search_modern()
+
+        ## save the results to disk
+        self.rs.save_wb()
+
 
 def main():
     row = 2
@@ -492,10 +677,39 @@ def main():
     search.scrape_pages()
 
     for d in search.all_search_results:
-        wb.write_row(row_idx=row, dict_contents=d)
-        row += 1
+        for i in range(d[12]):
+            wb.write_row(row_idx=row, dict_contents=d)
+            row += 1
 
     wb.save_wb()
 
+def main_test():
+    wb = ResultsSpreadsheet(filename="searchresultsBRATall")
+    wb.write_headers()
+
+    brat = RNCSearchTerm(start_row=2, results_spreadsheet=wb)
+
+    brat.ancient_splx_ipf = ['брати', 'бьрати', 'бирати']
+
+    brat.old_inf = 'брати'
+    brat.old_splx_ipf = [
+        ## without the front jer
+        'брал', 'бралъ', 'брала', 'брало', 'брали',
+        'браахъ', 'брааше', 'браахомъ', 'браашете',
+        'браахѫ', 'брааху',
+        'брааховѣ', 'браахове', 'браашета',
+        ## with the front jer
+        'бьрал', 'бьралъ', 'бьрала', 'бьрало', 'бьрали',
+        'бьраахъ', 'бьрааше', 'бьраахомъ', 'бьраашете',
+        'бьраахѫ', 'бьрааху',
+        'бьрааховѣ', 'бьраахове', 'бьраашета',
+        ]
+
+    brat.modern_splx_ipf = ['брать', 'бирать']
+
+    brat.search_all()
+
+    wb.save_wb
+
 if __name__ == "__main__":
-    main()
+    main_test()
