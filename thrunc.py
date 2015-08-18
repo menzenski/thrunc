@@ -39,6 +39,7 @@ from urllib import FancyURLopener
 from bs4 import BeautifulSoup as Soup
 import re
 import time
+import codecs
 import random
 import openpyxl
 
@@ -65,7 +66,13 @@ class ResultsSpreadsheet(openpyxl.Workbook):
             c.value = v
 
             ## also print dict contents to console
-            print "{}:\t{}".format(k, v)
+            try:
+                print u"{}:\t{}".format(k, v)
+            except UnicodeEncodeError as e:
+                print u"{}:\tUnicodeEncodeError: {}".format(k, e)
+            except UnicodeDecodeError as e:
+                print u"{}:\tUnicodeDecodeError: {}".format(k, e)
+
         print "\n"
 
     def save_wb(self):
@@ -520,16 +527,56 @@ class RNCSearchTerm(object):
     """Container object holding all (past-tense) forms of a search term."""
     ## we're really just providing a convenient namespace for handling terms.
 
-    def __init__(self, start_row=2, results_spreadsheet=None):
+    def __init__(self, start_row=2, results_spreadsheet=None,
+            csv_filename=None):
         ## starting row for writing results to spreadsheet
         self.rw = start_row
+
         ## the spreadsheet to which results will be written
         if results_spreadsheet is not None:
-            ## write to existing spreadsheet if one exists
+            ## write to existing spreadsheet if there is one
             self.rs = results_spreadsheet
         else:
             ## if one doesn't exist, create a new one with a default name
             self.rs = ResultsSpreadsheet(filename="Results")
+
+        ## write to a plain-text csv file too
+        if csv_filename is not None:
+            ## write to an existing file if there is one
+            ## filename example: 2015_08_18_1431_Results.txt
+            self.csv = "{}.txt".format(csv_filename)
+        else:
+            ## if one doesn't exist, create a new one with a default name
+            self.csv = "{}_{}_{}_{}_{}_Results.txt".format(
+                time.strftime("%Y"), time.strftime("%m"), time.strftime("%d"),
+                time.strftime("%H"), time.strftime("%M")
+                )
+            header_dict = {
+                1: u"Subcorpus",
+                2: u"BaseVerb",
+                3: u"Lemma",
+                4: u"GrammaticalForm",
+                5: u"PrefixValue",
+                6: u"Prefix",
+                7: u"SuffixValue",
+                8: u"Suffix",
+                9: u"SourceName",
+                10: u"SourceDateBegin",
+                11: u"SourceDateMiddle",
+                12: u"SourceDateEnd",
+                13: u"NumberOfTokens",
+                14: u"ResultsPageIndex"
+                }
+            with codecs.open(self.csv, "a", encoding="utf-8") as stream:
+                stream.write(
+                    "{};{};{};{};{};{};{};{};{};{};{};{};{};{}".format(
+                        header_dict[1], header_dict[2], header_dict[3],
+                        header_dict[4], header_dict[5], header_dict[6],
+                        header_dict[7], header_dict[8], header_dict[9],
+                        header_dict[10], header_dict[11], header_dict[12],
+                        header_dict[13], header_dict[14]
+                        )
+                    )
 
         ## the ancient corpus needs both lemmas and grammatical categories
         self.ancient_forms = ['iperf', 'aor', 'perf', 'past']
@@ -552,79 +599,60 @@ class RNCSearchTerm(object):
     def search_ancient(self):
         """Search the ancient subcorpus."""
 
-        for gramm_form in self.ancient_forms:
-            for verb_form in self.ancient_splx_ipf:
-                rv = RussianVerb(simplex_verb=verb_form)
-                for pfx, vb in rv.all_forms_by_prefix.iteritems():
-                    for v in vb:
-                        query = RNCQueryAncient(
-                            lexi1=v, gramm1=gramm_form
-                            )
 
-                        if pfx == "—":
-                            pfxv = "noPrefix"
-                        else:
-                            pfxv = "yesPrefix"
+        with codecs.open(self.csv, "a", encoding="utf-8") as stream:
+            for gramm_form in self.ancient_forms:
+                for verb_form in self.ancient_splx_ipf:
+                    rv = RussianVerb(simplex_verb=verb_form)
+                    for pfx, vb in rv.all_forms_by_prefix.iteritems():
+                        for v in vb:
+                            query = RNCQueryAncient(
+                                lexi1=v, gramm1=gramm_form
+                                )
 
-                        search = RNCSearch(
-                            rnc_query=query, subcorpus="Ancient",
-                            pfx_val=pfxv, prefix=pfx,
-                            sfx_val="noSuffix", lem=v,
-                            gramm_cat=gramm_form,
-                            base_verb=verb_form
-                            )
-                        search.scrape_pages()
+                            if pfx == "—":
+                                pfxv = "noPrefix"
+                            else:
+                                pfxv = "yesPrefix"
 
-                        if self.rs:
-                            for d in search.all_search_results:
-                                for i in range(d[13]):
-                                    self.rs.write_row(
-                                        row_idx=self.rw, dict_contents=d
+                            search = RNCSearch(
+                                rnc_query=query, subcorpus="Ancient",
+                                pfx_val=pfxv, prefix=pfx,
+                                sfx_val="noSuffix", lem=v,
+                                gramm_cat=gramm_form,
+                                base_verb=verb_form
+                                )
+                            search.scrape_pages()
+
+                            if self.rs:
+                                for d in search.all_search_results:
+                                    for i in range(d[13]):
+                                        self.rs.write_row(
+                                            row_idx=self.rw, dict_contents=d
+                                            )
+                                        self.rw += 1
+
+                            if self.csv:
+                                for d in search.all_search_results:
+                                    stream.write(
+                                        "{};{};{};{};{};{};{};{};" \
+                                        "{};{};{};{};{};{}".format(
+                                            d[1], d[2], d[3], d[4], d[5],
+                                            d[6], d[7], d[8], d[9], d[10],
+                                            d[11], d[12], d[13], d[14]
+                                            )
                                         )
-                                    self.rw += 1
 
     def search_old(self):
         """Search the old subcorpus."""
 
-        for verb_form in self.old_splx_ipf:
-            rv = RussianVerb(simplex_verb=verb_form)
-            for pfx, vb in rv.all_forms_by_prefix.iteritems():
-                for v in vb:
-                    query = RNCQueryOld(
-                        req=v
-                        )
-
-                    if pfx == "—":
-                        pfxv = "noPrefix"
-                    else:
-                        pfxv = "yesPrefix"
-
-                    search = RNCSearch(
-                        rnc_query=query, subcorpus="Old",
-                        pfx_val=pfxv, prefix=pfx,
-                        sfx_val="noSuffix", lem=v,
-                        base_verb=self.old_inf
-                        )
-                    search.scrape_pages()
-
-                    if self.rs:
-                        for d in search.all_search_results:
-                            for i in range(d[13]):
-                                self.rs.write_row(
-                                    row_idx=self.rw, dict_contents=d
-                                    )
-                                self.rw += 1
-
-    def search_modern(self):
-        """Search the modern subcorpus."""
-
-        for gramm_form in self.modern_forms:
-            for verb_form in self.modern_splx_ipf:
+        with codecs.open(self.csv, "a", encoding="utf-8") as stream:
+            for verb_form in self.old_splx_ipf:
                 rv = RussianVerb(simplex_verb=verb_form)
                 for pfx, vb in rv.all_forms_by_prefix.iteritems():
                     for v in vb:
-                        query = RNCQueryModern(
-                            lex1=v, gramm1=gramm_form, end_year=1799
+                        query = RNCQueryOld(
+                            req=v
                             )
 
                         if pfx == "—":
@@ -633,11 +661,10 @@ class RNCSearchTerm(object):
                             pfxv = "yesPrefix"
 
                         search = RNCSearch(
-                            rnc_query=query, subcorpus="Modern",
+                            rnc_query=query, subcorpus="Old",
                             pfx_val=pfxv, prefix=pfx,
                             sfx_val="noSuffix", lem=v,
-                            gramm_cat=gramm_form,
-                            base_verb=verb_form
+                            base_verb=self.old_inf
                             )
                         search.scrape_pages()
 
@@ -648,6 +675,63 @@ class RNCSearchTerm(object):
                                         row_idx=self.rw, dict_contents=d
                                         )
                                     self.rw += 1
+
+                        if self.csv:
+                            for d in search.all_search_results:
+                                stream.write(
+                                    "{};{};{};{};{};{};{};{};" \
+                                    "{};{};{};{};{};{}".format(
+                                        d[1], d[2], d[3], d[4], d[5],
+                                        d[6], d[7], d[8], d[9], d[10],
+                                        d[11], d[12], d[13], d[14]
+                                        )
+                                    )
+
+    def search_modern(self):
+        """Search the modern subcorpus."""
+
+        with codecs.open(self.csv, "a", encoding="utf-8") as stream:
+            for gramm_form in self.modern_forms:
+                for verb_form in self.modern_splx_ipf:
+                    rv = RussianVerb(simplex_verb=verb_form)
+                    for pfx, vb in rv.all_forms_by_prefix.iteritems():
+                        for v in vb:
+                            query = RNCQueryModern(
+                                lex1=v, gramm1=gramm_form, end_year=1799
+                                )
+
+                            if pfx == "—":
+                                pfxv = "noPrefix"
+                            else:
+                                pfxv = "yesPrefix"
+
+                            search = RNCSearch(
+                                rnc_query=query, subcorpus="Modern",
+                                pfx_val=pfxv, prefix=pfx,
+                                sfx_val="noSuffix", lem=v,
+                                gramm_cat=gramm_form,
+                                base_verb=verb_form
+                                )
+                            search.scrape_pages()
+
+                            if self.rs:
+                                for d in search.all_search_results:
+                                    for i in range(d[13]):
+                                        self.rs.write_row(
+                                            row_idx=self.rw, dict_contents=d
+                                            )
+                                        self.rw += 1
+
+                            if self.csv:
+                                for d in search.all_search_results:
+                                    stream.write(
+                                        "{};{};{};{};{};{};{};{};" \
+                                        "{};{};{};{};{};{}".format(
+                                            d[1], d[2], d[3], d[4], d[5],
+                                            d[6], d[7], d[8], d[9], d[10],
+                                            d[11], d[12], d[13], d[14]
+                                            )
+                                        )
 
     def search_all(self):
         """Perform an RNCSearch for each possible word in the RNCSearchTerm."""
@@ -657,7 +741,7 @@ class RNCSearchTerm(object):
         self.search_old()
         self.search_modern()
 
-        ## save the results to disk
+        ## save the results spreadsheet to disk
         self.rs.save_wb()
 
 
