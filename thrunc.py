@@ -814,7 +814,10 @@ class RNCSearchTerm(object):
 
 def main():
         ## MERET / -MIRAT 'die'
-        wb_mreti = ResultsSpreadsheet(filename="2015_08_23_verbMERETandMIRAT")
+        wb_mreti = ResultsSpreadsheet(
+            filename="2015_08_23_verbMERETandMIRAT",
+            csv=True
+            )
         wb_mreti.write_headers()
         ## verb 'meret'
         mreti = RNCSearchTerm(start_row=2, results_spreadsheet=wb_mreti)
@@ -840,7 +843,10 @@ def main():
         mirat.search_all()
 
         ## BRAT / -BIRAT 'GATHER'
-        wb_brat = ResultsSpreadsheet(filename="2015_08_23_verbBRATandBIRAT")
+        wb_brat = ResultsSpreadsheet(
+            filename="2015_08_23_verbBRATandBIRAT",
+            csv=True
+            )
         wb_brat.write_headers()
         ## verb 'brat'
         brat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_brat)
