@@ -47,17 +47,28 @@ import openpyxl
 class ResultsSpreadsheet(openpyxl.Workbook):
     """Excel spreadsheet containing search results."""
 
-    def __init__(self, filename):
+    def __init__(self, filename, csv=False):
+        """Initialize results spreadsheet.
+
+        Parameters
+        ----------
+          filename: name of the results spreadsheet (and of csv if selected)
+          csv: True or False — write output to a plain-text file also.
+        """
         super(ResultsSpreadsheet, self).__init__()
         self.filename = filename
         self.active.title = "Results"
+        if csv == True:
+            self.textfile = self.filename + ".txt"
 
     def write_row(self, row_idx, dict_contents):
         """Write dict to row number row_idx in the ResultsSpreadsheet.
 
-        row_idx: an integer representing a row number.
-        dict_contents: a dictionary in which the keys are column numbers
-          and the values are the corresponding contents, e.g., {1: 'Modern'}.
+        Parameters
+        ----------
+          row_idx: an integer representing a row number.
+          dict_contents: a dictionary in which the keys are column numbers
+            and the values are the corresponding contents, e.g., {1: 'Modern'}.
         """
 
 
@@ -105,6 +116,27 @@ class ResultsSpreadsheet(openpyxl.Workbook):
             }
 
         self.write_row(row_idx=1, dict_contents=header_dict)
+
+        try:
+            with codecs.open(self.textfile, "a", encoding="utf-8") as stream:
+                for k, v in header_dict.iteritems():
+                    stream.write("{};".format(v.encode('utf-8')))
+        except Exception as e:
+            print "Exception: {}".format(e)
+            raise
+
+    def write_dicts_to_txt(self, list_of_dicts):
+        """Write each dict in a list of dicts to a plain-text file."""
+
+        try:
+            with codecs.open(self.textfile, "a", encoding="utf-8") as stream:
+                for d in list_of_dicts:
+                    for k, v in d.iteritems():
+                        stream.write("{};".format(v.encode('utf-8')))
+
+        except Exception as e:
+            print "Exception: {}".format(e)
+            raise
 
 
 class RNCSource(object):
@@ -662,6 +694,7 @@ class RNCSearchTerm(object):
                                     row_idx=self.rw, dict_contents=d
                                     )
                                 self.rw += 1
+                            self.rs.write_dicts_to_txt(all_search_results)
 
     def search_old(self):
         """Search the old subcorpus."""
@@ -712,6 +745,8 @@ class RNCSearchTerm(object):
                                 row_idx=self.rw, dict_contents=d
                                 )
                             self.rw += 1
+                        self.rs.write_dicts_to_txt(all_search_results)
+
 
     def search_modern(self):
         """Search the modern subcorpus."""
@@ -764,6 +799,7 @@ class RNCSearchTerm(object):
                                     row_idx=self.rw, dict_contents=d
                                     )
                                 self.rw += 1
+                            self.rs.write_dicts_to_txt(all_search_results)
 
     def search_all(self):
         """Perform an RNCSearch for each possible word in the RNCSearchTerm."""
