@@ -565,6 +565,52 @@ class RNCSearchTerm(object):
         self.modern_pfx_pf = []    # prefixed perfective lemmas
         self.modern_pfx_ipf = []   # prefixed imperfective lemmas
 
+        ## possible imperfect/aorist/L-participle endings, rather than
+        ## type them all out for each verb individually.
+        ## some endings follow vowels
+        self.old_theme_vowel = []     # e.g., бьра, бра, бъра
+        self.old_stems_consonant = [] # e.g., бьр, бр, бър
+        self.old_postvowel_endings = [
+        ## L-participle
+        'л', 'лъ', 'ла', 'ло', 'ли',
+        ]
+        ## while some follow consonants
+        self.old_postconsonant_endings = [
+        ## imperfect with -a-
+        'аахъ', 'аахомъ', 'ааховѣ', 'аахове', # 1st person
+        'ааше', 'аашете', 'аашета',           # 2nd person
+        'аахѫ', 'ааху',                       # 3rd person
+        ## imperfect with -ѣ-
+        'ѣахъ', 'ѣахомъ', 'ѣаховѣ', 'ѣахове', # 1st person
+        'ѣаше', 'ѣашете', 'ѣашета',           # 2nd person
+        'ѣахѫ', 'ѣаху',                       # 3rd person
+        ## imperfect with -е-
+        'еахъ', 'еахомъ', 'еаховѣ', 'еахове', # 1st person
+        'еаше', 'еашете', 'еашета',           # 2nd person
+        'еахѫ', 'еаху',                       # 3rd person
+        ## aorist with -a-
+        'ахъ', 'аховѣ', 'ахове', 'ахомъ',     # 1st person
+        'а', 'аста', 'асте',                  # 2nd person
+        'ашѧ', 'аша',                         # 3rd person
+        ## aorist with -ѣ-
+        'ѣхъ', 'ѣховѣ', 'ѣхове', 'ѣхомъ',     # 1st person
+        'ѣ', 'ѣста', 'ѣсте',                  # 2nd person
+        'ѣшѧ', 'ѣша',                         # 3rd person
+        ## aorist with -е-
+        'ехъ', 'еховѣ', 'ехове', 'ехомъ',     # 1st person
+        'е', 'еста', 'есте',                  # 2nd person
+        'ашѧ', 'аша',                         # 3rd person
+        ]
+
+        # generate possible forms for the 'old' subcorpus
+        self.all_old_forms = []
+        for stem in self.old_stems_vowel:
+            for ending in self.old_postvowel_endings:
+                self.all_old_forms.append(stem + ending)
+        for stem in self.old_stems_consonant:
+            for ending in self.old_postconsonant_endings:
+                self.all_old_forms.append(stem + ending)
+
     def search_ancient(self):
         """Search the ancient subcorpus."""
 
@@ -603,18 +649,24 @@ class RNCSearchTerm(object):
                             )
                         search.scrape_pages()
 
+                        #if self.rs:
+                        #    for d in search.all_search_results:
+                        #        for i in range(d[13]):
+                        #            self.rs.write_row(
+                        #                row_idx=self.rw, dict_contents=d
+                        #                )
+                        #            self.rw += 1
                         if self.rs:
                             for d in search.all_search_results:
-                                for i in range(d[13]):
-                                    self.rs.write_row(
-                                        row_idx=self.rw, dict_contents=d
-                                        )
-                                    self.rw += 1
+                                self.rs.write_row(
+                                    row_idx=self.rw, dict_contents=d
+                                    )
+                                self.rw += 1
 
     def search_old(self):
         """Search the old subcorpus."""
 
-        for verb_form in self.old_splx_ipf:
+        for verb_form in self.all_old_forms:
             rv = RussianVerb(simplex_verb=verb_form)
             for pfx, vb in rv.all_forms_by_prefix.iteritems():
                 for v in vb:
@@ -647,13 +699,19 @@ class RNCSearchTerm(object):
                         )
                     search.scrape_pages()
 
+                    #if self.rs:
+                    #    for d in search.all_search_results:
+                    #        for i in range(d[13]):
+                    #            self.rs.write_row(
+                    #                row_idx=self.rw, dict_contents=d
+                    #                )
+                    #            self.rw += 1
                     if self.rs:
                         for d in search.all_search_results:
-                            for i in range(d[13]):
-                                self.rs.write_row(
-                                    row_idx=self.rw, dict_contents=d
-                                    )
-                                self.rw += 1
+                            self.rs.write_row(
+                                row_idx=self.rw, dict_contents=d
+                                )
+                            self.rw += 1
 
     def search_modern(self):
         """Search the modern subcorpus."""
@@ -693,13 +751,19 @@ class RNCSearchTerm(object):
                             )
                         search.scrape_pages()
 
+                        #if self.rs:
+                        #    for d in search.all_search_results:
+                        #        for i in range(d[13]):
+                        #            self.rs.write_row(
+                        #                row_idx=self.rw, dict_contents=d
+                        #                )
+                        #            self.rw += 1
                         if self.rs:
                             for d in search.all_search_results:
-                                for i in range(d[13]):
-                                    self.rs.write_row(
-                                        row_idx=self.rw, dict_contents=d
-                                        )
-                                    self.rw += 1
+                                self.rs.write_row(
+                                    row_idx=self.rw, dict_contents=d
+                                    )
+                                self.rw += 1
 
     def search_all(self):
         """Perform an RNCSearch for each possible word in the RNCSearchTerm."""
@@ -712,419 +776,42 @@ class RNCSearchTerm(object):
         ## save the results spreadsheet to disk
         self.rs.save_wb()
 
-
 def main():
-    row = 2
-    wb = ResultsSpreadsheet(filename="historicalSearchResults")
-    wb.write_headers()
+        ## MERET / -MIRAT 'die'
+        wb_mreti = ResultsSpreadsheet(filename="2015_08_23_verbMERETandMIRAT")
+        wb_mreti.write_headers()
+        ## verb 'meret'
+        mreti = RNCSearchTerm(start_row=2, results_spreadsheet=wb_mreti)
+        mreti.ancient_splx_ipf = ['мрети', 'мрѣти', 'мерети']
+        mreti.old_inf = 'мрѣти'
+        mreti.old_stems_vowel = ['мрь', 'мръ', 'мр', 'мре', 'мрѣ']
+        mreti.old_stems_consonant = ['мр', 'мьр', 'мър', 'мер', 'мѣр']
+        mreti.modern_splx_ipf = ['мереть']
 
-    word = "почитывать"
-    query = RNCQueryModern(lex1=word)
-    search = RNCSearch(
-        rnc_query=query, subcorpus="Modern",
-        pfx_val="yesPrefix", prefix="po-",
-        sfx_val="yesSuffix", suffix="-yva-",
-        lem=word, base_verb="читать"
-        )
-    search.scrape_pages()
-
-    for d in search.all_search_results:
-        for i in range(d[12]):
-            wb.write_row(row_idx=row, dict_contents=d)
-            row += 1
-
-    wb.save_wb()
-
-def main_test():
-    wb = ResultsSpreadsheet(filename="searchresultsBRATall")
-    wb.write_headers()
-
-    brat = RNCSearchTerm(start_row=2, results_spreadsheet=wb)
-
-    brat.ancient_splx_ipf = ['брати', 'бьрати']
-
-    brat.old_inf = 'брати'
-    brat.old_splx_ipf = [
-        ## without the front jer
-        'брал', 'бралъ', 'брала', 'брало', 'брали',
-        'браахъ', 'брааше', 'браахомъ', 'браашете',
-        'браахѫ', 'брааху',
-        'брааховѣ', 'браахове', 'браашета',
-        ## with the front jer
-        'бьрал', 'бьралъ', 'бьрала', 'бьрало', 'бьрали',
-        'бьраахъ', 'бьрааше', 'бьраахомъ', 'бьраашете',
-        'бьраахѫ', 'бьрааху',
-        'бьрааховѣ', 'бьраахове', 'бьраашета',
-        ]
-
-    brat.modern_splx_ipf = ['брать']
-
-    brat.search_all()
-
-    #wb.save_wb
-
-def main_real():
-    ## BRAT / -BIRAT 'GATHER'
-    wb_brat = ResultsSpreadsheet(filename="2015_08_20_verbBRAT")
-    wb_brat.write_headers()
-    ## verb 'brat'
-    brat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_brat)
-    brat.ancient_splx_ipf = ['брати', 'бьрати']
-    brat.old_inf = 'брати'
-    brat.old_splx_ipf = [
-        ## without the front jer
-        'брал', 'бралъ', 'брала', 'брало', 'брали',         # L-participle
-        'браахъ', 'браахомъ', 'брааховѣ', 'браахове',       # impft 1st person
-        'брааше', 'браашете', 'браашета',                   # impft 2nd person
-        'браахѫ', 'брааху',                                 # impft 3rd person
-        'брахъ', 'браховѣ', 'брахове', 'брахомъ',           # aor. 1st person
-        'бра', 'браста', 'брасте',                          # aor. 2nd person
-        'брашѧ', 'браша',                                   # aor. 3rd person
-        ## with the front jer-
-        'бьрал', 'бьралъ', 'бьрала', 'бьрало', 'бьрали',    # L-participle
-        'бьраахъ', 'бьраахомъ', 'бьрааховѣ', 'бьраахове',   # impft 1st person
-        'бьрааше', 'бьраашете', 'бьраашета',                # impft 2nd person
-        'бьраахѫ', 'бьрааху',                               # impft 3rd person
-        'бьрахъ', 'бьраховѣ', 'бьрахове', 'бьрахомъ',       # aor. 1st person
-        'бьра', 'бьраста', 'бьрасте',                       # aor. 2nd person
-        'бьрашѧ', 'бьраша',                                 # aor. 3rd person
-        ## with the back jer
-        'бърал', 'бъралъ', 'бърала', 'бърало', 'бърали',    # L-participle
-        'бъраахъ', 'бъраахомъ', 'бърааховѣ', 'бъраахове',   # impft 1st person
-        'бърааше', 'бъраашете', 'бъраашета',                # impft 2nd person
-        'бъраахѫ', 'бърааху',                               # impft 3rd person
-        'бърахъ', 'бъраховѣ', 'бърахове', 'бърахомъ',       # aor. 1st person
-        'бъра', 'бъраста', 'бърасте',                       # aor. 2nd person
-        'бърашѧ', 'бъраша',                                 # aor. 3rd person
-        ## with the present-tense root vowel (imperfect only)
-        'бераахъ', 'бераахомъ', 'берааховѣ', 'бераахове',   # impft 1st person
-        'берааше', 'бераашете', 'бераашета',                # impft 2nd person
-        'бераахѫ', 'берааху',                               # impft 3rd person
-        ## with the present-tense root vowel and yat (imperfect only)
-        'берѣахъ', 'берѣахомъ', 'берѣаховѣ', 'берѣахове',   # impft 1st person
-        'берѣаше', 'берѣашете', 'берѣашета',                # impft 2nd person
-        'берѣахѫ', 'берѣаху',                               # impft 3rd person
-        ## with the present-tense root vowel and е (imperfect only)
-        'береахъ', 'береахомъ', 'береаховѣ', 'береахове',   # impft 1st person
-        'береаше', 'береашете', 'береашета',                # impft 2nd person
-        'береахѫ', 'береаху',                               # impft 3rd person
-        ]
-    brat.modern_splx_ipf = ['брать']
-    brat.search_all()
-
-    wb_birat = ResultsSpreadsheet(filename="2015_08_20_verbBIRAT")
-    wb_birat.write_headers()
-    ## verb 'birat'
-    birat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_birat)
-    birat.suffix = "-a-"
-    birat.ancient_splx_ipf = ['бирати']
-    birat.old_inf = 'бирати'
-    birat.old_splx_ipf = [
-        ## L-participle
-        'бирал', 'биралъ', 'бирала', 'бирало', 'бирали',    # L-participle
-        ## aorist
-        'бирахъ', 'бираховѣ', 'бирахове', 'бирахомъ',       # aor. 1st person
-        'бира', 'бираста', 'бирасте',                       # aor. 2nd person
-        'бирашѧ', 'бираша',                                 # aor. 3rd person
-        ## imperfect with -a-
-        'бираахъ', 'бираахомъ', 'бирааховѣ', 'бираахове',   # impft 1st person
-        'бирааше', 'бираашете', 'бираашета',                # impft 2nd person
-        'бираахѫ', 'бирааху',                               # impft 3rd person
-        ## imperfect with -yat-
-        'бирѣахъ', 'бирѣахомъ', 'бирѣаховѣ', 'бирѣахове',   # impft 1st person
-        'бирѣаше', 'бирѣашете', 'бирѣашета',                # impft 2nd person
-        'бирѣахѫ', 'бирѣаху',                               # impft 3rd person
-        ## imperfect with -е-
-        'биреахъ', 'биреахомъ', 'биреаховѣ', 'биреахове',   # impft 1st person
-        'биреаше', 'биреашете', 'биреашета',                # impft 2nd person
-        'биреахѫ', 'биреаху',                               # impft 3rd person
-        ]
-    birat.modern_splx_ipf = ['бирать']
-    birat.search_all()
-
-    ## DRAT / -DIRAT 'FLAY'
-    wb_drat = ResultsSpreadsheet(filename="2015_08_20_verbDRAT")
-    wb_drat.write_headers()
-    ## verb 'drat'
-    drat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_drat)
-    drat.ancient_splx_ipf = ['драти', 'дьрати']
-    drat.old_inf = 'драти'
-    drat.old_splx_ipf = [
-        ## without the front jer
-        'драл', 'дралъ', 'драла', 'драло', 'драли',         # L-participle
-        'драахъ', 'драахомъ', 'драаховѣ', 'драахове',       # impft 1st person
-        'драаше', 'драашете', 'драашета',                   # impft 2nd person
-        'драахѫ', 'драаху',                                 # impft 3rd person
-        'драхъ', 'драховѣ', 'драхове', 'драхомъ',           # aor. 1st person
-        'дра', 'драста', 'драсте',                          # aor. 2nd person
-        'драшѧ', 'драша',                                   # aor. 3rd person
-        ## with the front jer
-        'дьрал', 'дьралъ', 'дьрала', 'дьрало', 'дьрали',    # L-participle
-        'дьраахъ', 'дьраахомъ', 'дьрааховѣ', 'дьраахове',   # impft 1st person
-        'дьрааше', 'дьраашете', 'дьраашета',                # impft 2nd person
-        'дьраахѫ', 'дьрааху',                               # impft 3rd person
-        'дьрахъ', 'дьраховѣ', 'дьрахове', 'дьрахомъ',       # aor. 1st person
-        'дьра', 'дьраста', 'дьрасте',                       # aor. 2nd person
-        'дьрашѧ', 'дьраша',                                 # aor. 3rd person
-        ## with the back jer
-        'дърал', 'дъралъ', 'дърала', 'дърало', 'дърали',    # L-participle
-        'дъраахъ', 'дъраахомъ', 'дърааховѣ', 'дъраахове',   # impft 1st person
-        'дърааше', 'дъраашете', 'дъраашета',                # impft 2nd person
-        'дъраахѫ', 'дърааху',                               # impft 3rd person
-        'дърахъ', 'дъраховѣ', 'дърахове', 'дърахомъ',       # aor. 1st person
-        'дъра', 'дъраста', 'дърасте',                       # aor. 2nd person
-        'дърашѧ', 'дъраша',                                 # aor. 3rd person
-        ## with the present-tense root vowel (imperfect only)
-        'дераахъ', 'дераахомъ', 'дерааховѣ', 'дераахове',   # impft 1st person
-        'дерааше', 'дераашете', 'дераашета',                # impft 2nd person
-        'дераахѫ', 'дерааху',                               # impft 3rd person
-        ## with the present-tense root vowel and yat (imperfect only)
-        'дерѣахъ', 'дерѣахомъ', 'дерѣаховѣ', 'дерѣахове',   # impft 1st person
-        'дерѣаше', 'дерѣашете', 'дерѣашета',                # impft 2nd person
-        'дерѣахѫ', 'дерѣаху',                               # impft 3rd person
-        ## with the present-tense root vowel and е (imperfect only)
-        'дереахъ', 'дереахомъ', 'дереаховѣ', 'дереахове',   # impft 1st person
-        'дереаше', 'дереашете', 'дереашета',                # impft 2nd person
-        'дереахѫ', 'дереаху',                               # impft 3rd person
-        ]
-    drat.modern_splx_ipf = ['драть']
-    drat.search_all()
-
-    wb_dirat = ResultsSpreadsheet(filename="2015_08_20_verbDIRAT")
-    wb_dirat.write_headers()
-    ## verb 'dirat'
-    dirat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_dirat)
-    dirat.suffix = "-a-"
-    dirat.ancient_splx_ipf = ['дирати']
-    dirat.old_inf = 'дирати'
-    dirat.old_splx_ipf = [
-        ## L-participle
-        'дирал', 'диралъ', 'дирала', 'дирало', 'дирали',    # L-participle
-        ## aorist
-        'дирахъ', 'дираховѣ', 'дирахове', 'дирахомъ',       # aor. 1st person
-        'дира', 'дираста', 'дирасте',                       # aor. 2nd person
-        'дирашѧ', 'дираша',                                 # aor. 3rd person
-        ## imperfect with -a-
-        'дираахъ', 'дираахомъ', 'дирааховѣ', 'дираахове',   # impft 1st person
-        'дирааше', 'дираашете', 'дираашета',                # impft 2nd person
-        'дираахѫ', 'дирааху',                               # impft 3rd person
-        ## imperfect with -yat-
-        'дирѣахъ', 'дирѣахомъ', 'дирѣаховѣ', 'дирѣахове',   # impft 1st person
-        'дирѣаше', 'дирѣашете', 'дирѣашета',                # impft 2nd person
-        'дирѣахѫ', 'дирѣаху',                               # impft 3rd person
-        ## imperfect with -е-
-        'диреахъ', 'диреахомъ', 'диреаховѣ', 'диреахове',   # impft 1st person
-        'диреаше', 'диреашете', 'диреашета',                # impft 2nd person
-        'диреахѫ', 'диреаху',                               # impft 3rd person
-        ]
-    dirat.modern_splx_ipf = ['дирать']
-    dirat.search_all()
-
-    ## PRAT / -PIRAT 'PRESS'
-
-    wb_prat = ResultsSpreadsheet(filename="2015_08_20_verbPRAT")
-    wb_prat.write_headers()
-    ## verb 'prat'
-    prat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_prat)
-    prat.ancient_splx_ipf = ['прати', 'пьрати']
-    prat.old_inf = 'прати'
-    prat.old_splx_ipf = [
-        ## without the front jer
-        'прал', 'пралъ', 'прала', 'прало', 'прали',         # L-participle
-        'праахъ', 'праахомъ', 'прааховѣ', 'праахове',       # impft 1st person
-        'прааше', 'праашете', 'праашета',                   # impft 2nd person
-        'праахѫ', 'прааху',                                 # impft 3rd person
-        'прахъ', 'праховѣ', 'прахове', 'прахомъ',           # aor. 1st person
-        'пра', 'праста', 'прасте',                          # aor. 2nd person
-        'прашѧ', 'праша',                                   # aor. 3rd person
-        ## with the front jer
-        'пьрал', 'пьралъ', 'пьрала', 'пьрало', 'пьрали',    # L-participle
-        'пьраахъ', 'пьраахомъ', 'пьрааховѣ', 'пьраахове',   # impft 1st person
-        'пьрааше', 'пьраашете', 'пьраашета',                # impft 2nd person
-        'пьраахѫ', 'пьрааху',                               # impft 3rd person
-        'пьрахъ', 'пьраховѣ', 'пьрахове', 'пьрахомъ',       # aor. 1st person
-        'пьра', 'пьраста', 'пьрасте',                       # aor. 2nd person
-        'пьрашѧ', 'пьраша',                                 # aor. 3rd person
-        ## with the back jer
-        'пърал', 'пъралъ', 'пърала', 'пърало', 'пърали',    # L-participle
-        'пъраахъ', 'пъраахомъ', 'пърааховѣ', 'пъраахове',   # impft 1st person
-        'пърааше', 'пъраашете', 'пъраашета',                # impft 2nd person
-        'пъраахѫ', 'пърааху',                               # impft 3rd person
-        'пърахъ', 'пъраховѣ', 'пърахове', 'пърахомъ',       # aor. 1st person
-        'пъра', 'пъраста', 'пърасте',                       # aor. 2nd person
-        'пърашѧ', 'пъраша',                                 # aor. 3rd person
-        ## with the present-tense root vowel (imperfect only)
-        'пераахъ', 'пераахомъ', 'перааховѣ', 'пераахове',   # impft 1st person
-        'перааше', 'пераашете', 'пераашета',                # impft 2nd person
-        'пераахѫ', 'перааху',                               # impft 3rd person
-        ## with the present-tense root vowel and yat (imperfect only)
-        'перѣахъ', 'перѣахомъ', 'перѣаховѣ', 'перѣахове',   # impft 1st person
-        'перѣаше', 'перѣашете', 'перѣашета',                # impft 2nd person
-        'перѣахѫ', 'перѣаху',                               # impft 3rd person
-        ## with the present-tense root vowel and е (imperfect only)
-        'переахъ', 'переахомъ', 'переаховѣ', 'переахове',   # impft 1st person
-        'переаше', 'переашете', 'переашета',                # impft 2nd person
-        'переахѫ', 'переаху',                               # impft 3rd person
-        ]
-    prat.modern_splx_ipf = ['прать']
-    prat.search_all()
-
-    wb_pirat = ResultsSpreadsheet(filename="2015_08_20_verbPIRAT")
-    wb_pirat.write_headers()
-    ## verb 'pirat'
-    pirat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_pirat)
-    pirat.suffix = "-a-"
-    pirat.ancient_splx_ipf = ['пирати']
-    pirat.old_inf = 'пирати'
-    pirat.old_splx_ipf = [
-        ## L-participle
-        'пирал', 'пиралъ', 'пирала', 'пирало', 'пирали',    # L-participle
-        ## aorist
-        'пирахъ', 'пираховѣ', 'пирахове', 'пирахомъ',       # aor. 1st person
-        'пира', 'пираста', 'пирасте',                       # aor. 2nd person
-        'пирашѧ', 'пираша',                                 # aor. 3rd person
-        ## imperfect with -a-
-        'пираахъ', 'пираахомъ', 'пирааховѣ', 'пираахове',   # impft 1st person
-        'пирааше', 'пираашете', 'пираашета',                # impft 2nd person
-        'пираахѫ', 'пирааху',                               # impft 3rd person
-        ## imperfect with -yat-
-        'пирѣахъ', 'пирѣахомъ', 'пирѣаховѣ', 'пирѣахове',   # impft 1st person
-        'пирѣаше', 'пирѣашете', 'пирѣашета',                # impft 2nd person
-        'пирѣахѫ', 'пирѣаху',                               # impft 3rd person
-        ## imperfect with -е-
-        'пиреахъ', 'пиреахомъ', 'пиреаховѣ', 'пиреахове',   # impft 1st person
-        'пиреаше', 'пиреашете', 'пиреашета',                # impft 2nd person
-        'пиреахѫ', 'пиреаху',                               # impft 3rd person
-        ]
-    pirat.modern_splx_ipf = ['пирать']
-    pirat.search_all()
-
-    ## SRAT / -SIRAT 'SHIT'
-
-    wb_srat = ResultsSpreadsheet(filename="2015_08_20_verbSRAT")
-    wb_srat.write_headers()
-    ## verb 'srat'
-    srat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_srat)
-    srat.ancient_splx_ipf = ['срати', 'сьрати']
-    srat.old_inf = 'срати'
-    srat.old_splx_ipf = [
-        ## without the front jer
-        'срал', 'сралъ', 'срала', 'срало', 'срали',         # L-participle
-        'сраахъ', 'сраахомъ', 'срааховѣ', 'сраахове',       # impft 1st person
-        'срааше', 'сраашете', 'сраашета',                   # impft 2nd person
-        'сраахѫ', 'срааху',                                 # impft 3rd person
-        'срахъ', 'сраховѣ', 'срахове', 'срахомъ',           # aor. 1st person
-        'сра', 'сраста', 'срасте',                          # aor. 2nd person
-        'срашѧ', 'сраша',                                   # aor. 3rd person
-        ## with the front jer
-        'сьрал', 'сьралъ', 'сьрала', 'сьрало', 'сьрали',    # L-participle
-        'сьраахъ', 'сьраахомъ', 'сьрааховѣ', 'сьраахове',   # impft 1st person
-        'сьрааше', 'сьраашете', 'сьраашета',                # impft 2nd person
-        'сьраахѫ', 'сьрааху',                               # impft 3rd person
-        'сьрахъ', 'сьраховѣ', 'сьрахове', 'сьрахомъ',       # aor. 1st person
-        'сьра', 'сьраста', 'сьрасте',                       # aor. 2nd person
-        'сьрашѧ', 'сьраша',                                 # aor. 3rd person
-        ## with the back jer
-        'сърал', 'съралъ', 'сърала', 'сърало', 'сърали',    # L-participle
-        'съраахъ', 'съраахомъ', 'сърааховѣ', 'съраахове',   # impft 1st person
-        'сърааше', 'съраашете', 'съраашета',                # impft 2nd person
-        'съраахѫ', 'сърааху',                               # impft 3rd person
-        'сърахъ', 'съраховѣ', 'сърахове', 'сърахомъ',       # aor. 1st person
-        'съра', 'съраста', 'сърасте',                       # aor. 2nd person
-        'сърашѧ', 'съраша',                                 # aor. 3rd person
-        ## with the present-tense root vowel (imperfect only)
-        'сераахъ', 'сераахомъ', 'серааховѣ', 'сераахове',   # impft 1st person
-        'серааше', 'сераашете', 'сераашета',                # impft 2nd person
-        'сераахѫ', 'серааху',                               # impft 3rd person
-        ## with the present-tense root vowel and yat (imperfect only)
-        'серѣахъ', 'серѣахомъ', 'серѣаховѣ', 'серѣахове',   # impft 1st person
-        'серѣаше', 'серѣашете', 'серѣашета',                # impft 2nd person
-        'серѣахѫ', 'серѣаху',                               # impft 3rd person
-        ## with the present-tense root vowel and е (imperfect only)
-        'сереахъ', 'сереахомъ', 'сереаховѣ', 'сереахове',   # impft 1st person
-        'сереаше', 'сереашете', 'сереашета',                # impft 2nd person
-        'сереахѫ', 'сереаху',                               # impft 3rd person
-        ]
-    srat.modern_splx_ipf = ['срать']
-    srat.search_all()
-
-    wb_sirat = ResultsSpreadsheet(filename="2015_08_20_verbSIRAT")
-    wb_sirat.write_headers()
-    ## verb 'pirat'
-    sirat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_sirat)
-    sirat.suffix = "-a-"
-    sirat.ancient_splx_ipf = ['сирати']
-    sirat.old_inf = 'сирати'
-    sirat.old_splx_ipf = [
-        ## L-participle
-        'сирал', 'сиралъ', 'сирала', 'сирало', 'сирали',    # L-participle
-        ## aorist
-        'сирахъ', 'сираховѣ', 'сирахове', 'сирахомъ',       # aor. 1st person
-        'сира', 'сираста', 'сирасте',                       # aor. 2nd person
-        'сирашѧ', 'сираша',                                 # aor. 3rd person
-        ## imperfect with -a-
-        'сираахъ', 'сираахомъ', 'сирааховѣ', 'сираахове',   # impft 1st person
-        'сирааше', 'сираашете', 'сираашета',                # impft 2nd person
-        'сираахѫ', 'сирааху',                               # impft 3rd person
-        ## imperfect with -yat-
-        'сирѣахъ', 'сирѣахомъ', 'сирѣаховѣ', 'сирѣахове',   # impft 1st person
-        'сирѣаше', 'сирѣашете', 'сирѣашета',                # impft 2nd person
-        'сирѣахѫ', 'сирѣаху',                               # impft 3rd person
-        ## imperfect with -е-
-        'сиреахъ', 'сиреахомъ', 'сиреаховѣ', 'сиреахове',   # impft 1st person
-        'сиреаше', 'сиреашете', 'сиреашета',                # impft 2nd person
-        'сиреахѫ', 'сиреаху',                               # impft 3rd person
-        ]
-    sirat.modern_splx_ipf = ['сирать']
-    sirat.search_all()
-
-def main_realer():
+        mreti.search_all()
+        ## verb 'mirat'
+        mirat_start = mreti.rw + 1
+        mirat = RNCSearchTerm(
+            start_row=mirat_start,
+            results_spreadsheet=wb_mreti
+            )
+        mirat.suffix = "-a-"
+        mirat.ancient_splx_ipf = ['мирати']
+        mirat.old_inf = 'мирати'
+        mirat.old_stems_vowel = ['мира']
+        mirat.old_stems_consonant = ['мир']
+        mirat.modern_splx_ipf = ['мирать']
+        mirat.search_all()
 
         ## BRAT / -BIRAT 'GATHER'
-        wb_brat = ResultsSpreadsheet(filename="2015_08_22_verbBRATandBIRAT")
+        wb_brat = ResultsSpreadsheet(filename="2015_08_23_verbBRATandBIRAT")
         wb_brat.write_headers()
         ## verb 'brat'
         brat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_brat)
         brat.ancient_splx_ipf = ['брати', 'бьрати']
         brat.old_inf = 'брати'
-        brat.old_splx_ipf = [
-            ## without the front jer
-            'брал', 'бралъ', 'брала', 'брало', 'брали',         # L-participle
-            'браахъ', 'браахомъ', 'брааховѣ', 'браахове',       # impft 1st person
-            'брааше', 'браашете', 'браашета',                   # impft 2nd person
-            'браахѫ', 'брааху',                                 # impft 3rd person
-            'брахъ', 'браховѣ', 'брахове', 'брахомъ',           # aor. 1st person
-            'бра', 'браста', 'брасте',                          # aor. 2nd person
-            'брашѧ', 'браша',                                   # aor. 3rd person
-            ## with the front jer-
-            'бьрал', 'бьралъ', 'бьрала', 'бьрало', 'бьрали',    # L-participle
-            'бьраахъ', 'бьраахомъ', 'бьрааховѣ', 'бьраахове',   # impft 1st person
-            'бьрааше', 'бьраашете', 'бьраашета',                # impft 2nd person
-            'бьраахѫ', 'бьрааху',                               # impft 3rd person
-            'бьрахъ', 'бьраховѣ', 'бьрахове', 'бьрахомъ',       # aor. 1st person
-            'бьра', 'бьраста', 'бьрасте',                       # aor. 2nd person
-            'бьрашѧ', 'бьраша',                                 # aor. 3rd person
-            ## with the back jer
-            'бърал', 'бъралъ', 'бърала', 'бърало', 'бърали',    # L-participle
-            'бъраахъ', 'бъраахомъ', 'бърааховѣ', 'бъраахове',   # impft 1st person
-            'бърааше', 'бъраашете', 'бъраашета',                # impft 2nd person
-            'бъраахѫ', 'бърааху',                               # impft 3rd person
-            'бърахъ', 'бъраховѣ', 'бърахове', 'бърахомъ',       # aor. 1st person
-            'бъра', 'бъраста', 'бърасте',                       # aor. 2nd person
-            'бърашѧ', 'бъраша',                                 # aor. 3rd person
-            ## with the present-tense root vowel (imperfect only)
-            'бераахъ', 'бераахомъ', 'берааховѣ', 'бераахове',   # impft 1st person
-            'берааше', 'бераашете', 'бераашета',                # impft 2nd person
-            'бераахѫ', 'берааху',                               # impft 3rd person
-            ## with the present-tense root vowel and yat (imperfect only)
-            'берѣахъ', 'берѣахомъ', 'берѣаховѣ', 'берѣахове',   # impft 1st person
-            'берѣаше', 'берѣашете', 'берѣашета',                # impft 2nd person
-            'берѣахѫ', 'берѣаху',                               # impft 3rd person
-            ## with the present-tense root vowel and е (imperfect only)
-            'береахъ', 'береахомъ', 'береаховѣ', 'береахове',   # impft 1st person
-            'береаше', 'береашете', 'береашета',                # impft 2nd person
-            'береахѫ', 'береаху',                               # impft 3rd person
-            ]
+        brat.old_stems_vowel = ['бьра', 'бъра', 'бра']
+        brat.old_stems_consonant = ['бьр', 'бър', 'бр']
         brat.modern_splx_ipf = ['брать']
         brat.search_all()
         ## verb 'birat'
@@ -1136,176 +823,10 @@ def main_realer():
         birat.suffix = "-a-"
         birat.ancient_splx_ipf = ['бирати']
         birat.old_inf = 'бирати'
-        birat.old_splx_ipf = [
-            ## L-participle
-            'бирал', 'биралъ', 'бирала', 'бирало', 'бирали',    # L-participle
-            ## aorist
-            'бирахъ', 'бираховѣ', 'бирахове', 'бирахомъ',       # aor. 1st person
-            'бира', 'бираста', 'бирасте',                       # aor. 2nd person
-            'бирашѧ', 'бираша',                                 # aor. 3rd person
-            ## imperfect with -a-
-            'бираахъ', 'бираахомъ', 'бирааховѣ', 'бираахове',   # impft 1st person
-            'бирааше', 'бираашете', 'бираашета',                # impft 2nd person
-            'бираахѫ', 'бирааху',                               # impft 3rd person
-            ## imperfect with -yat-
-            'бирѣахъ', 'бирѣахомъ', 'бирѣаховѣ', 'бирѣахове',   # impft 1st person
-            'бирѣаше', 'бирѣашете', 'бирѣашета',                # impft 2nd person
-            'бирѣахѫ', 'бирѣаху',                               # impft 3rd person
-            ## imperfect with -е-
-            'биреахъ', 'биреахомъ', 'биреаховѣ', 'биреахове',   # impft 1st person
-            'биреаше', 'биреашете', 'биреашета',                # impft 2nd person
-            'биреахѫ', 'биреаху',                               # impft 3rd person
-            ]
+        birat.old_stems_vowel = ['бира']
+        birat.old_stems_consonant = ['бир']
         birat.modern_splx_ipf = ['бирать']
         birat.search_all()
 
-        ## MERET / -MIRAT 'die'
-        wb_mreti = ResultsSpreadsheet(filename="2015_08_22_verbMERETandMIRAT")
-        wb_mreti.write_headers()
-        ## verb 'meret'
-        mreti = RNCSearchTerm(start_row=2, results_spreadsheet=wb_mreti)
-        mreti.ancient_splx_ipf = ['мрети', 'мрѣти', 'мерети']
-        mreti.old_inf = 'мрѣти'
-        mreti.old_splx_ipf = [
-            ## with r + front jer vocalism
-            'мрьл', 'мрьлъ', 'мрьла', 'мрьло', 'мрьли',       # L-participle
-            'мьраахъ', 'мьраахомъ', 'мьрааховѣ', 'мьраахове', # impft 1st person
-            'мьрѣахъ', 'мьрѣахомъ', 'мьрѣаховѣ', 'мьрѣахове', # impft 1st person
-            'мьреахъ', 'мьреахомъ', 'мьреаховѣ', 'мьреахове', # impft 1st person
-            'мьрааше', 'мьраашете', 'мьраашета',              # impft 2nd person
-            'мьрѣаше', 'мьрѣашете', 'мьрѣашета',              # impft 2nd person
-            'мьреаше', 'мьреашете', 'мьреашета',              # impft 2nd person
-            'мьраахѫ', 'мьрааху',                             # impft 3rd person
-            'мьрѣахѫ', 'мьрѣаху',                             # impft 3rd person
-            'мьреахѫ', 'мьреаху',                             # impft 3rd person
-            'мьрахъ', 'мьраховѣ', 'мьрахове', 'мьрахомъ',     # aor. 1st person
-            'мьрѣхъ', 'мьрѣховѣ', 'мьрѣхове', 'мьрѣхомъ',     # aor. 1st person
-            'мьрехъ', 'мьреховѣ', 'мьрехове', 'мьрехомъ',     # aor. 1st person
-            'мьра', 'мьраста', 'мьрасте',                     # aor. 2nd person
-            'мьрѣ', 'мьрѣста', 'мьрѣсте',                     # aor. 2nd person
-            'мьре', 'мьреста', 'мьресте',                     # aor. 2nd person
-            'мьрашѧ', 'мьраша',                               # aor. 3rd person
-            'мьрѣшѧ', 'мьрѣша',                               # aor. 3rd person
-            'мьрешѧ', 'мьреша',                               # aor. 3rd person
-
-            ## with r + back jer vocalism
-            'мръл', 'мрълъ', 'мръла', 'мръло', 'мръли',       # L-participle
-            'мъраахъ', 'мъраахомъ', 'мърааховѣ', 'мъраахове', # impft 1st person
-            'мърѣахъ', 'мърѣахомъ', 'мърѣаховѣ', 'мърѣахове', # impft 1st person
-            'мъреахъ', 'мъреахомъ', 'мъреаховѣ', 'мъреахове', # impft 1st person
-            'мърааше', 'мъраашете', 'мъраашета',              # impft 2nd person
-            'мърѣаше', 'мърѣашете', 'мърѣашета',              # impft 2nd person
-            'мъреаше', 'мъреашете', 'мъреашета',              # impft 2nd person
-            'мъраахѫ', 'мърааху',                             # impft 3rd person
-            'мърѣахѫ', 'мърѣаху',                             # impft 3rd person
-            'мъреахѫ', 'мъреаху',                             # impft 3rd person
-            'мърахъ', 'мъраховѣ', 'мърахове', 'мърахомъ',     # aor. 1st person
-            'мърѣхъ', 'мърѣховѣ', 'мърѣхове', 'мърѣхомъ',     # aor. 1st person
-            'мърехъ', 'мъреховѣ', 'мърехове', 'мърехомъ',     # aor. 1st person
-            'мъра', 'мъраста', 'мърасте',                     # aor. 2nd person
-            'мърѣ', 'мърѣста', 'мърѣсте',                     # aor. 2nd person
-            'мъре', 'мъреста', 'мъресте',                     # aor. 2nd person
-            'мърашѧ', 'мъраша',                               # aor. 3rd person
-            'мърѣшѧ', 'мърѣша',                               # aor. 3rd person
-            'мърешѧ', 'мъреша',                               # aor. 3rd person
-
-            ## with r + no jer vocalism
-            'мрл', 'мрлъ', 'мрла', 'мрло', 'мрли',            # L-participle
-            'мраахъ', 'мраахомъ', 'мрааховѣ', 'мраахове',     # impft 1st person
-            'мрѣахъ', 'мрѣахомъ', 'мрѣаховѣ', 'мрѣахове',     # impft 1st person
-            'мреахъ', 'мреахомъ', 'мреаховѣ', 'мреахове',     # impft 1st person
-            'мрааше', 'мраашете', 'мраашета',                 # impft 2nd person
-            'мрѣаше', 'мрѣашете', 'мрѣашета',                 # impft 2nd person
-            'мреаше', 'мреашете', 'мреашета',                 # impft 2nd person
-            'мраахѫ', 'мрааху',                               # impft 3rd person
-            'мрѣахѫ', 'мрѣаху',                               # impft 3rd person
-            'мреахѫ', 'мреаху',                               # impft 3rd person
-            'мрахъ', 'мраховѣ', 'мрахове', 'мрахомъ',         # aor. 1st person
-            'мрѣхъ', 'мрѣховѣ', 'мрѣхове', 'мрѣхомъ',         # aor. 1st person
-            'мрехъ', 'мреховѣ', 'мрехове', 'мрехомъ',         # aor. 1st person
-            'мра', 'мраста', 'мрасте',                        # aor. 2nd person
-            'мрѣ', 'мрѣста', 'мрѣсте',                        # aor. 2nd person
-            'мре', 'мреста', 'мресте',                        # aor. 2nd person
-            'мрашѧ', 'мраша',                                 # aor. 3rd person
-            'мрѣшѧ', 'мрѣша',                                 # aor. 3rd person
-            'мрешѧ', 'мреша',                                 # aor. 3rd person
-
-            ## with yat + r vocalism
-            'мѣрл', 'мѣрлъ', 'мѣрла', 'мѣрло', 'мѣрли',       # L-participle
-            'мѣраахъ', 'мѣраахомъ', 'мѣрааховѣ', 'мѣраахове', # impft 1st person
-            'мѣрѣахъ', 'мѣрѣахомъ', 'мѣрѣаховѣ', 'мѣрѣахове', # impft 1st person
-            'мѣреахъ', 'мѣреахомъ', 'мѣреаховѣ', 'мѣреахове', # impft 1st person
-            'мѣрааше', 'мѣраашете', 'мѣраашета',              # impft 2nd person
-            'мѣрѣаше', 'мѣрѣашете', 'мѣрѣашета',              # impft 2nd person
-            'мѣреаше', 'мѣреашете', 'мѣреашета',              # impft 2nd person
-            'мѣраахѫ', 'мѣрааху',                             # impft 3rd person
-            'мѣрѣахѫ', 'мѣрѣаху',                             # impft 3rd person
-            'мѣреахѫ', 'мѣреаху',                             # impft 3rd person
-            'мѣрахъ', 'мѣраховѣ', 'мѣрахове', 'мѣрахомъ',     # aor. 1st person
-            'мѣрахъ', 'мѣраховѣ', 'мѣрахове', 'мѣрахомъ',     # aor. 1st person
-            'мѣрахъ', 'мѣраховѣ', 'мѣрахове', 'мѣрахомъ',     # aor. 1st person
-            'мѣра', 'мѣраста', 'мѣрасте',                     # aor. 2nd person
-            'мѣрѣ', 'мѣрѣста', 'мѣрѣсте',                     # aor. 2nd person
-            'мѣре', 'мѣреста', 'мѣресте',                     # aor. 2nd person
-            'мѣрашѧ', 'мѣраша',                               # aor. 3rd person
-            'мѣрѣшѧ', 'мѣрѣша',                               # aor. 3rd person
-            'мѣрешѧ', 'мѣреша',                               # aor. 3rd person
-
-            ## with е + r vocalism
-            'мерл', 'мерлъ', 'мерла', 'мерло', 'мерли',       # L-participle
-            'мераахъ', 'мераахомъ', 'мерааховѣ', 'мераахове', # impft 1st person
-            'мерѣахъ', 'мерѣахомъ', 'мерѣаховѣ', 'мерѣахове', # impft 1st person
-            'мереахъ', 'мереахомъ', 'мереаховѣ', 'мереахове', # impft 1st person
-            'мерааше', 'мераашете', 'мераашета',              # impft 2nd person
-            'мерѣаше', 'мерѣашете', 'мерѣашета',              # impft 2nd person
-            'мереаше', 'мереашете', 'мереашета',              # impft 2nd person
-            'мераахѫ', 'мерааху',                             # impft 3rd person
-            'мерѣахѫ', 'мерѣаху',                             # impft 3rd person
-            'мереахѫ', 'мереаху',                             # impft 3rd person
-            'мерахъ', 'мераховѣ', 'мерахове', 'мерахомъ',     # aor. 1st person
-            'мерѣхъ', 'мерѣховѣ', 'мерѣхове', 'мерѣхомъ',     # aor. 1st person
-            'мерехъ', 'мереховѣ', 'мерехове', 'мерехомъ',     # aor. 1st person
-            'мера', 'мераста', 'мерасте',                     # aor. 2nd person
-            'мерѣ', 'мерѣста', 'мерѣсте',                     # aor. 2nd person
-            'мере', 'мерѣста', 'мересте',                     # aor. 2nd person
-            'мерашѧ', 'мераша',                               # aor. 3rd person
-            'мерѣшѧ', 'мерѣша',                               # aor. 3rd person
-            'мерешѧ', 'мереша',                               # aor. 3rd person
-
-            ]
-        mreti.modern_splx_ipf = ['мереть']
-        mreti.search_all()
-        ## verb 'birat'
-        mirat_start = mreti.rw + 1
-        mirat = RNCSearchTerm(
-            start_row=mirat_start,
-            results_spreadsheet=wb_mreti
-            )
-        mirat.suffix = "-a-"
-        mirat.ancient_splx_ipf = ['мирати']
-        mirat.old_inf = 'мирати'
-        mirat.old_splx_ipf = [
-            ## L-participle
-            'мирал', 'миралъ', 'мирала', 'мирало', 'мирали',    # L-participle
-            ## aorist
-            'мирахъ', 'мираховѣ', 'мирахове', 'мирахомъ',       # aor. 1st person
-            'мира', 'мираста', 'мирасте',                       # aor. 2nd person
-            'мирашѧ', 'мираша',                                 # aor. 3rd person
-            ## imperfect with -a-
-            'мираахъ', 'мираахомъ', 'мирааховѣ', 'мираахове',   # impft 1st person
-            'мирааше', 'мираашете', 'мираашета',                # impft 2nd person
-            'мираахѫ', 'мирааху',                               # impft 3rd person
-            ## imperfect with -yat-
-            'мирѣахъ', 'мирѣахомъ', 'мирѣаховѣ', 'мирѣахове',   # impft 1st person
-            'мирѣаше', 'мирѣашете', 'мирѣашета',                # impft 2nd person
-            'мирѣахѫ', 'мирѣаху',                               # impft 3rd person
-            ## imperfect with -е-
-            'миреахъ', 'миреахомъ', 'миреаховѣ', 'миреахове',   # impft 1st person
-            'миреаше', 'миреашете', 'миреашета',                # impft 2nd person
-            'миреахѫ', 'миреаху',                               # impft 3rd person
-            ]
-        mirat.modern_splx_ipf = ['мирать']
-        mirat.search_all()
-
 if __name__ == "__main__":
-    main_realer()
+    main()
