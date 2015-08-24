@@ -44,6 +44,13 @@ import codecs
 import random
 import openpyxl
 
+def to_unicode_or_bust(obj, encoding='utf-8'):
+    """Ensure that an object is unicode."""
+    if isinstance(obj, basestring):
+        if not isinstance(obj, unicode):
+            obj = unicode(obj, encoding)
+    return obj
+
 class ResultsSpreadsheet(openpyxl.Workbook):
     """Excel spreadsheet containing search results."""
 
@@ -120,7 +127,16 @@ class ResultsSpreadsheet(openpyxl.Workbook):
         try:
             with codecs.open(self.textfile, "a", encoding="utf-8") as stream:
                 for k, v in header_dict.iteritems():
-                    stream.write("{};".format(v.encode('utf-8')))
+                    u_v = to_unicode_or_bust(v)
+                    try:
+                        stream.write(u"{};".format(u_v))
+                    except UnicodeDecodeError as e:
+                        print "UDE: {}".format(e)
+                        raise
+                    except UnicodeEncodeError as e:
+                        print "UEE: {}".format(e)
+                        raise
+
         except Exception as e:
             print "Exception: {}".format(e)
             raise
@@ -132,7 +148,15 @@ class ResultsSpreadsheet(openpyxl.Workbook):
             with codecs.open(self.textfile, "a", encoding="utf-8") as stream:
                 for d in list_of_dicts:
                     for k, v in d.iteritems():
-                        stream.write("{};".format(v.encode('utf-8')))
+                        u_v = to_unicode_or_bust(v)
+                        try:
+                            stream.write(u"{};".format(u_v))
+                        except UnicodeDecodeError as e:
+                            print "UDE: {}".format(e)
+                            raise
+                        except UnicodeEncodeError as e:
+                            print "UEE: {}".format(e)
+                            raise
 
         except Exception as e:
             print "Exception: {}".format(e)
@@ -492,14 +516,17 @@ class RNCSearch(object):
             url = self.address
             address = url + "p=" + str(page_idx) + "&"
             page = Webpage(address)
-            if page.soup.ol:
-                if page.soup.ol.find_all('li'):
-                    print page_idx
-                    print address
-                    print "\n"
-                    self.scrape_one_page(soup=page.soup, idx=page_idx)
-                    page_idx += 1
 
+            if page.soup.ol:
+                if page.soup.ol.contents:
+                    if page.soup.ol.find_all('li'):
+                        print page_idx
+                        print address
+                        print "\n"
+                        self.scrape_one_page(soup=page.soup, idx=page_idx)
+                        page_idx += 1
+                    else:
+                        has_more_results = False
                 else:
                     has_more_results = False
             else:
@@ -600,7 +627,7 @@ class RNCSearchTerm(object):
         ## possible imperfect/aorist/L-participle endings, rather than
         ## type them all out for each verb individually.
         ## some endings follow vowels
-        self.old_theme_vowel = []     # e.g., бьра, бра, бъра
+        self.old_stems_vowel = []     # e.g., бьра, бра, бъра
         self.old_stems_consonant = [] # e.g., бьр, бр, бър
         self.old_postvowel_endings = [
         ## L-participle
@@ -694,7 +721,9 @@ class RNCSearchTerm(object):
                                     row_idx=self.rw, dict_contents=d
                                     )
                                 self.rw += 1
-                            self.rs.write_dicts_to_txt(all_search_results)
+                            self.rs.write_dicts_to_txt(
+                                search.all_search_results
+                                )
 
     def search_old(self):
         """Search the old subcorpus."""
@@ -745,7 +774,9 @@ class RNCSearchTerm(object):
                                 row_idx=self.rw, dict_contents=d
                                 )
                             self.rw += 1
-                        self.rs.write_dicts_to_txt(all_search_results)
+                        self.rs.write_dicts_to_txt(
+                            search.all_search_results
+                            )
 
 
     def search_modern(self):
@@ -799,7 +830,9 @@ class RNCSearchTerm(object):
                                     row_idx=self.rw, dict_contents=d
                                     )
                                 self.rw += 1
-                            self.rs.write_dicts_to_txt(all_search_results)
+                            self.rs.write_dicts_to_txt(
+                                search.all_search_results
+                                )
 
     def search_all(self):
         """Perform an RNCSearch for each possible word in the RNCSearchTerm."""
