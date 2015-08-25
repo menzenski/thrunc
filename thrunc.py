@@ -126,6 +126,7 @@ class ResultsSpreadsheet(openpyxl.Workbook):
 
         try:
             with codecs.open(self.textfile, "a", encoding="utf-8") as stream:
+                stream.write(u"\n")
                 for k, v in header_dict.iteritems():
                     u_v = to_unicode_or_bust(v)
                     try:
@@ -136,7 +137,6 @@ class ResultsSpreadsheet(openpyxl.Workbook):
                     except UnicodeEncodeError as e:
                         print "UEE: {}".format(e)
                         raise
-                stream.write(u"\n")
 
         except Exception as e:
             print "Exception: {}".format(e)
@@ -148,6 +148,7 @@ class ResultsSpreadsheet(openpyxl.Workbook):
         try:
             with codecs.open(self.textfile, "a", encoding="utf-8") as stream:
                 for d in list_of_dicts:
+                    stream.write(u"\n")
                     for k, v in d.iteritems():
                         u_v = to_unicode_or_bust(v)
                         try:
@@ -158,7 +159,6 @@ class ResultsSpreadsheet(openpyxl.Workbook):
                         except UnicodeEncodeError as e:
                             print "UEE: {}".format(e)
                             raise
-                stream.write(u"\n")
 
         except Exception as e:
             print "Exception: {}".format(e)
