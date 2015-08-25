@@ -136,6 +136,7 @@ class ResultsSpreadsheet(openpyxl.Workbook):
                     except UnicodeEncodeError as e:
                         print "UEE: {}".format(e)
                         raise
+                stream.write(u"\n")
 
         except Exception as e:
             print "Exception: {}".format(e)
@@ -157,6 +158,7 @@ class ResultsSpreadsheet(openpyxl.Workbook):
                         except UnicodeEncodeError as e:
                             print "UEE: {}".format(e)
                             raise
+                stream.write(u"\n")
 
         except Exception as e:
             print "Exception: {}".format(e)
