@@ -663,14 +663,15 @@ class RNCSearchTerm(object):
         'ашѧ', 'аша',                         # 3rd person
         ]
 
+    def get_old_forms(self, stem_list_vowel, stem_list_consonant):
         # generate possible forms for the 'old' subcorpus
         self.all_old_forms = []
-        for stem in self.old_stems_vowel:
+        for v_stem in stem_list_vowel:
             for ending in self.old_postvowel_endings:
-                self.all_old_forms.append(stem + ending)
-        for stem in self.old_stems_consonant:
+                self.all_old_forms.append(v_stem + ending)
+        for c_stem in stem_list_consonant:
             for ending in self.old_postconsonant_endings:
-                self.all_old_forms.append(stem + ending)
+                self.all_old_forms.append(c_stem + ending)
 
     def search_ancient(self):
         """Search the ancient subcorpus."""
@@ -848,62 +849,69 @@ class RNCSearchTerm(object):
         self.rs.save_wb()
 
 def main():
-        ## MERET / -MIRAT 'die'
-        wb_mreti = ResultsSpreadsheet(
-            filename="2015_08_23_verbMERETandMIRAT",
-            csv=True
-            )
-        wb_mreti.write_headers()
-        ## verb 'meret'
-        mreti = RNCSearchTerm(start_row=2, results_spreadsheet=wb_mreti)
-        mreti.ancient_splx_ipf = ['мрети', 'мрѣти', 'мерети']
-        mreti.old_inf = 'мрѣти'
-        mreti.old_stems_vowel = ['мрь', 'мръ', 'мр', 'мре', 'мрѣ']
-        mreti.old_stems_consonant = ['мр', 'мьр', 'мър', 'мер', 'мѣр']
-        mreti.modern_splx_ipf = ['мереть']
+    ## MERET / -MIRAT 'die'
+    wb_mreti = ResultsSpreadsheet(
+        filename="2015_08_23_verbMERETandMIRAT",
+        csv=True
+        )
+    wb_mreti.write_headers()
+    ## verb 'meret'
+    mreti = RNCSearchTerm(start_row=2, results_spreadsheet=wb_mreti)
+    mreti.ancient_splx_ipf = ['мрети', 'мрѣти', 'мерети']
+    mreti.old_inf = 'мрѣти'
+    mreti.get_old_forms(
+        stem_list_vowel=['мрь', 'мръ', 'мр', 'мре', 'мрѣ'],
+        stem_list_consonant=['мр', 'мьр', 'мър', 'мер', 'мѣр']
+        )
+    mreti.modern_splx_ipf = ['мереть']
+    mreti.search_all()
+    ## verb 'mirat'
+    mirat_start = mreti.rw + 1
+    mirat = RNCSearchTerm(
+        start_row=mirat_start,
+        results_spreadsheet=wb_mreti
+        )
+    mirat.suffix = "-a-"
+    mirat.ancient_splx_ipf = ['мирати']
+    mirat.old_inf = 'мирати'
+    mirat.get_old_forms(
+        stem_list_vowel=['мира'],
+        stem_list_consonant=['мир']
+        )
+    mirat.modern_splx_ipf = ['мирать']
+    mirat.search_all()
 
-        mreti.search_all()
-        ## verb 'mirat'
-        mirat_start = mreti.rw + 1
-        mirat = RNCSearchTerm(
-            start_row=mirat_start,
-            results_spreadsheet=wb_mreti
-            )
-        mirat.suffix = "-a-"
-        mirat.ancient_splx_ipf = ['мирати']
-        mirat.old_inf = 'мирати'
-        mirat.old_stems_vowel = ['мира']
-        mirat.old_stems_consonant = ['мир']
-        mirat.modern_splx_ipf = ['мирать']
-        mirat.search_all()
-
-        ## BRAT / -BIRAT 'GATHER'
-        wb_brat = ResultsSpreadsheet(
-            filename="2015_08_23_verbBRATandBIRAT",
-            csv=True
-            )
-        wb_brat.write_headers()
-        ## verb 'brat'
-        brat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_brat)
-        brat.ancient_splx_ipf = ['брати', 'бьрати']
-        brat.old_inf = 'брати'
-        brat.old_stems_vowel = ['бьра', 'бъра', 'бра']
-        brat.old_stems_consonant = ['бьр', 'бър', 'бр']
-        brat.modern_splx_ipf = ['брать']
-        brat.search_all()
-        ## verb 'birat'
-        birat_start = brat.rw + 1
-        birat = RNCSearchTerm(
-            start_row=birat_start,
-            results_spreadsheet=wb_brat
-            )
-        birat.suffix = "-a-"
-        birat.ancient_splx_ipf = ['бирати']
-        birat.old_inf = 'бирати'
-        birat.old_stems_vowel = ['бира']
-        birat.old_stems_consonant = ['бир']
-        birat.modern_splx_ipf = ['бирать']
-        birat.search_all()
+    ## BRAT / -BIRAT 'GATHER'
+    wb_brat = ResultsSpreadsheet(
+        filename="2015_08_23_verbBRATandBIRAT",
+        csv=True
+        )
+    wb_brat.write_headers()
+    ## verb 'brat'
+    brat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_brat)
+    brat.ancient_splx_ipf = ['брати', 'бьрати']
+    brat.old_inf = 'брати'
+    brat.get_old_forms(
+        stem_list_vowel=['бьра', 'бъра', 'бра'],
+        stem_list_consonant=['бьр', 'бър', 'бр']
+        )
+    brat.modern_splx_ipf = ['брать']
+    brat.search_all()
+    ## verb 'birat'
+    birat_start = brat.rw + 1
+    birat = RNCSearchTerm(
+        start_row=birat_start,
+        results_spreadsheet=wb_brat
+        )
+    birat.suffix = "-a-"
+    birat.ancient_splx_ipf = ['бирати']
+    birat.old_inf = 'бирати'
+    brat.get_old_forms(
+        stem_list_vowel=['бира'],
+        stem_list_consonant=['бир']
+        )
+    birat.modern_splx_ipf = ['бирать']
+    birat.search_all()
 
 if __name__ == "__main__":
     main()
