@@ -849,14 +849,207 @@ class RNCSearchTerm(object):
         self.rs.save_wb()
 
 def main():
+    ## CHEST / CHITAT / CHITYVAT 'READ'
+    wb_chest = ResultsSpreadsheet(
+        filename="2015_08_26_verbCHESTandCHITATandCHITYVAT",
+        csv=True
+        )
+    wb_chest.write_headers()
+    ## verb 'chest'
+    chest = RNCSearchTerm(
+        start_row=2,
+        results_spreadsheet=wb_chest
+        )
+    chest.ancient_splx_ipf = ['чисти', 'чьсти']
+    chest.old_inf = 'чести'
+    chest.get_old_forms(
+        stem_list_vowel=['ч', 'че'],
+        stem_list_consonant=['чьт', 'чт', 'чът']
+        )
+    chest.modern_splx_ipf = ['честь']
+    chest.search_all()
+    ## verb 'chitat'
+    chitat_start = chest.rw + 1
+    chitat = RNCSearchTerm(
+        start_row=chitat_start,
+        results_spreadsheet=wb_chest
+        )
+    chitat.suffix = "-a-"
+    chitat.ancient_splx_ipf = ['читати']
+    chitat.old_inf = 'читати'
+    chitat.get_old_forms(
+        stem_list_vowel=['чита'],
+        stem_list_consonant=['чита', 'чит']
+        )
+    chitat.modern_splx_ipf = ['читать']
+    chitat.search_all()
+    ## verb 'chityvat'
+    chityvat_start = chitat.rw + 1
+    chityvat = RNCSearchTerm(
+        start_row=chityvat_start,
+        results_spreadsheet=wb_chest
+        )
+    chityvat.suffix = "-yva-"
+    chityvat.ancient_splx_ipf = ['читывати']
+    chityvat.old_inf = 'читывати'
+    chityvat.get_old_forms(
+        stem_list_vowel=['читыва', 'читова'],
+        stem_list_consonant=['читыв', 'читу']
+        )
+    chityvat.modern_splx_ipf = ['читывать']
+    chityvat.search_all()
+
+    ## BRAT / -BIRAT 'GATHER'
+    wb_brat = ResultsSpreadsheet(
+        filename="2015_08_26_verbBRATandBIRAT",
+        csv=True
+        )
+    wb_brat.write_headers()
+    ## verb 'brat'
+    brat = RNCSearchTerm(
+        start_row=2,
+        results_spreadsheet=wb_brat
+        )
+    brat.ancient_splx_ipf = ['брати', 'бьрати']
+    brat.old_inf = 'брати'
+    brat.get_old_forms(
+        stem_list_vowel=['бьра', 'бъра', 'бра', 'бр'],
+        stem_list_consonant=['бьр', 'бър', 'бр']
+        )
+    brat.modern_splx_ipf = ['брать']
+    brat.search_all()
+    ## verb 'birat'
+    birat_start = brat.rw + 1
+    birat = RNCSearchTerm(
+        start_row=birat_start,
+        results_spreadsheet=wb_brat
+        )
+    birat.suffix = "-a-"
+    birat.ancient_splx_ipf = ['бирати']
+    birat.old_inf = 'бирати'
+    birat.get_old_forms(
+        stem_list_vowel=['бира'],
+        stem_list_consonant=['бир']
+        )
+    birat.modern_splx_ipf = ['бирать']
+    birat.search_all()
+
+    ## DRAT / -DIRAT 'FLAY'
+    wb_drat = ResultsSpreadsheet(
+        filename="2015_08_26_verbDRATandDIRAT",
+        csv=True
+        )
+    wb_drat.write_headers()
+    ## verb 'drat'
+    drat = RNCSearchTerm(
+        start_row=2,
+        results_spreadsheet=wb_drat
+        )
+    drat.ancient_splx_ipf = ['драти', 'дьрати']
+    drat.old_inf = 'драти'
+    drat.get_old_forms(
+        stem_list_vowel=['дьра', 'дъра', 'дра', 'др'],
+        stem_list_consonant=['дьр', 'дър', 'др']
+        )
+    drat.modern_splx_ipf = ['драть']
+    drat.search_all()
+    ## verb 'dirat'
+    dirat_start = drat.rw + 1
+    dirat = RNCSearchTerm(
+        start_row=dirat_start,
+        results_spreadsheet=wb_drat
+        )
+    dirat.suffix = "-a-"
+    dirat.ancient_splx_ipf = ['дирати']
+    dirat.old_inf = 'дирати'
+    dirat.get_old_forms(
+        stem_list_vowel=['дира'],
+        stem_list_consonant=['дир']
+        )
+    dirat.modern_splx_ipf = ['дирать']
+    dirat.search_all()
+
+    ## PRAT / -PIRAT 'PRESS'
+    wb_prat = ResultsSpreadsheet(
+        filename="2015_08_26_verbPRATandPIRAT",
+        csv=True
+        )
+    wb_prat.write_headers()
+    ## verb 'prat'
+    prat = RNCSearchTerm(
+        start_row=2,
+        results_spreadsheet=wb_prat
+        )
+    prat.ancient_splx_ipf = ['прати', 'пьрати']
+    prat.old_inf = 'прати'
+    prat.get_old_forms(
+        stem_list_vowel=['пьра', 'пъра', 'пра', 'пр'],
+        stem_list_consonant=['пьр', 'пър', 'пр']
+        )
+    prat.modern_splx_ipf = ['прать']
+    prat.search_all()
+    ## verb 'pirat'
+    pirat_start = prat.rw + 1
+    pirat = RNCSearchTerm(
+        start_row=pirat_start,
+        results_spreadsheet=wb_prat
+        )
+    pirat.suffix = "-a-"
+    pirat.ancient_splx_ipf = ['пирати']
+    pirat.old_inf = 'пирати'
+    pirat.get_old_forms(
+        stem_list_vowel=['пира'],
+        stem_list_consonant=['пир']
+        )
+    pirat.modern_splx_ipf = ['пирать']
+    pirat.search_all()
+
+    ## SRAT / -SIRAT 'SHIT'
+    wb_srat = ResultsSpreadsheet(
+        filename="2015_08_26_verbSRATandSIRAT",
+        csv=True
+        )
+    wb_srat.write_headers()
+    ## verb 'srat'
+    srat = RNCSearchTerm(
+        start_row=2,
+        results_spreadsheet=wb_srat
+        )
+    srat.ancient_splx_ipf = ['срати', 'сьрати']
+    srat.old_inf = 'срати'
+    srat.get_old_forms(
+        stem_list_vowel=['сьра', 'съра', 'сра', 'ср'],
+        stem_list_consonant=['сьр', 'сър', 'ср']
+        )
+    srat.modern_splx_ipf = ['срать']
+    srat.search_all()
+    ## verb 'sirat'
+    sirat_start = srat.rw + 1
+    sirat = RNCSearchTerm(
+        start_row=sirat_start,
+        results_spreadsheet=wb_srat
+        )
+    sirat.suffix = "-a-"
+    sirat.ancient_splx_ipf = ['сирати']
+    sirat.old_inf = 'сирати'
+    sirat.get_old_forms(
+        stem_list_vowel=['сира'],
+        stem_list_consonant=['сир']
+        )
+    sirat.modern_splx_ipf = ['сирать']
+    sirat.search_all()
+
     ## MERET / -MIRAT 'die'
     wb_mreti = ResultsSpreadsheet(
-        filename="2015_08_23_verbMERETandMIRAT",
+        filename="2015_08_26_verbMERETandMIRAT",
         csv=True
         )
     wb_mreti.write_headers()
     ## verb 'meret'
-    mreti = RNCSearchTerm(start_row=2, results_spreadsheet=wb_mreti)
+    mreti = RNCSearchTerm(
+        start_row=2,
+        results_spreadsheet=wb_mreti
+        )
     mreti.ancient_splx_ipf = ['мрети', 'мрѣти', 'мерети']
     mreti.old_inf = 'мрѣти'
     mreti.get_old_forms(
@@ -880,38 +1073,6 @@ def main():
         )
     mirat.modern_splx_ipf = ['мирать']
     mirat.search_all()
-
-    ## BRAT / -BIRAT 'GATHER'
-    wb_brat = ResultsSpreadsheet(
-        filename="2015_08_23_verbBRATandBIRAT",
-        csv=True
-        )
-    wb_brat.write_headers()
-    ## verb 'brat'
-    brat = RNCSearchTerm(start_row=2, results_spreadsheet=wb_brat)
-    brat.ancient_splx_ipf = ['брати', 'бьрати']
-    brat.old_inf = 'брати'
-    brat.get_old_forms(
-        stem_list_vowel=['бьра', 'бъра', 'бра'],
-        stem_list_consonant=['бьр', 'бър', 'бр']
-        )
-    brat.modern_splx_ipf = ['брать']
-    brat.search_all()
-    ## verb 'birat'
-    birat_start = brat.rw + 1
-    birat = RNCSearchTerm(
-        start_row=birat_start,
-        results_spreadsheet=wb_brat
-        )
-    birat.suffix = "-a-"
-    birat.ancient_splx_ipf = ['бирати']
-    birat.old_inf = 'бирати'
-    brat.get_old_forms(
-        stem_list_vowel=['бира'],
-        stem_list_consonant=['бир']
-        )
-    birat.modern_splx_ipf = ['бирать']
-    birat.search_all()
 
 if __name__ == "__main__":
     main()
