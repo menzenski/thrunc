@@ -2,6 +2,7 @@
 *.txt
 *.xlsx
 *.xml
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
