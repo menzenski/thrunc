@@ -46,6 +46,7 @@ import random
 import openpyxl
 
 def to_unicode_or_bust(obj, encoding='utf-8'):
+    ## by Kumar McMillan ( http://farmdev.com/talks/unicode/ )
     """Ensure that an object is unicode."""
     if isinstance(obj, basestring):
         if not isinstance(obj, unicode):
