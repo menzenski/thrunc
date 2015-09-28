@@ -45,6 +45,12 @@ import codecs
 import random
 import openpyxl
 
+try:
+    import xml.etree.cElementTree as ET
+except ImportError as e:
+    print "ImportError: {}\nUsing non-C implementation of ET".format(e)
+    import xml.etree.ElementTree as ET
+
 def to_unicode_or_bust(obj, encoding='utf-8'):
     ## by Kumar McMillan ( http://farmdev.com/talks/unicode/ )
     """Ensure that an object is unicode."""
@@ -52,6 +58,240 @@ def to_unicode_or_bust(obj, encoding='utf-8'):
         if not isinstance(obj, unicode):
             obj = unicode(obj, encoding)
     return obj
+
+class SearchList(object):
+    """An XML document containing a list of search terms."""
+
+    def __init__(self, file_name):
+        """Initialize XML file object.
+
+        Parameters
+        ----------
+          file_name (str): name of the XML file. It will be created if it
+            does not already exist.
+        """
+        self.exists = False
+        if file_name.endswith(".xml"):
+            self.file_name = file_name
+        else:
+            self.file_name = file_name + ".xml"
+        self.unicode_parser = ET.XMLParser(encoding='utf-8')
+        self.check_if_exists(filename=self.file_name)
+
+    def check_if_exists(self, filename):
+        """Create an XML file if one doesn't exist already."""
+        try:
+            self.tree = ET.parse(self.file_name, parser=self.unicode_parser)
+            self.root = self.tree.getroot()
+            print "Search XML file already exists."
+            self.exists = True
+        except IOError as e:
+            print "IOError: {}".format(e)
+            self.root = ET.Element("searchList")
+            print "Search XML file didn't exist, so I made one."
+            self.exists = False
+
+    def add_search_to_list(self, base_verb=u"", derived_verb=u"",
+                           dv_pfx=u"", dv_pfx_name=u"", dv_sfx=u"",
+                           dv_sfx_name=u"", dv_sec=False, dv_rfx=False):
+        """Add an element to the XML file containing a new search query.
+
+        Parameters
+        ----------
+          base_verb (unicode): basic verb form / center of verb constellation
+            (e.g., читать or писать, but not прочитать or переписывать)
+          derived_verb (unicode): derived verb form, possibly with prefix,
+            suffix, or both (e.g., читать, писать, прочитать, or переписывать)
+          df_pfx (unicode): specific form of the prefix occurring on the given
+            derived verb (e.g., надо in надобрать)
+          df_pfx_name (unicode): 'standard' or 'referring' name of the prefix
+            occurring on the given verb
+          df_sfx (unicode): specific form of the suffix occurring on the given
+            derived verb (e.g., ыва in перечитывать)
+          df_sfx_name (unicode): 'standard' or 'referring' name of the suffix
+            occurring on the given verb (e.g., '-yva-' for перечитывать)
+          subcorpus (unicode): name of the subcorpus in which the search will
+            take place (i.e., u'Modern', u'Old', or u'Ancient')
+          dv_sec (boolean): True if secondary imperfective, False otherwise
+          dv_rfx (boolean): True if a -ся verb, False otherwise
+
+        Returns
+        -------
+          If a <baseVerb> element does not exist (as a child of the root) with
+            @simplex="base_verb", one is created.
+          If a <derivedVerb> element does not exist (as a child of the baseVerb
+            element), one is created.
+
+        Sample output
+        -------------
+          <baseVerb idx="1" simplex="читать" dateAdded="2015-09-27"
+            timeAdded="10:44:36 CST">
+              <derivedVerb idx="1" prefixed="yes" suffixed="no" secondary="no"
+                reflexive="no">
+                  <prefix prefixName="nad-">надо</prefix>
+                  <suffix suffixName="-aj-">а</suffix>
+                  <fullVerb>надочитать</fullVerb>
+              </derivedVerb>
+          </baseVerb>
+        """
+        date_created = to_unicode_or_bust(time.strftime("%Y-%m-%d"))
+        time_created = to_unicode_or_bust(time.strftime("%H:%M:%S %Z"))
+
+        if derived_verb.endswith(u"ся") or derived_verb.endswith(u"сь"):
+            dv_rfx=True
+
+        bv_exists = False
+        for verb in self.root.findall(u'baseVerb'):
+            if verb.get(u'simplex') == base_verb:
+                bv = verb
+                bv_exists = True
+
+        if bv_exists == False:
+            bv = ET.SubElement(self.root, u"baseVerb")
+            bv.set(u"idx", u"{}".format(lb + 1))
+            bv.set(u"simplex", u"{}".format(base_verb))
+            bv.set(u"dateCreated", u"{}".format(date_created))
+            bv.set(u"timeCreated", u"{}".format(time_created))
+            bv_exists = True
+
+        if bv_exists == True:
+
+            dv_exists = False
+            for dverb in bv.findall(u'derivedVerb'):
+                for fdv in dverb.findall(u'fullVerb'):
+                    if fdv.text is not None:
+                        if fdv.text == derived_verb:
+                            dv_exists = True
+
+            if dv_exists == False:
+                dv = ET.SubElement(bv, u"derivedVerb")
+                dv.set(u"idx", u"{}".format(ld + 1))
+                dv.set(u"dateCreated", u"{}".format(date_created))
+                dv.set(u"timeCreated", u"{}".format(time_created))
+
+                if dv_pfx == u"":
+                    dv.set(u"prefixed", u"no")
+                    dvp = ET.SubElement(dv, u"prefix")
+                    dvp.set(u"prefixName", u"")
+                else:
+                    dv.set(u"prefixed", u"yes")
+                    dvp = ET.SubElement(dv, u"prefix")
+                    dvp.set(u"prefixName", u"{}".format(dv_pfx_name))
+                    dvp.text = dv_pfx
+
+                if dv_sfx == u"":
+                    dv.set(u"suffixed", u"no")
+                    dvs = ET.SubElement(dv, u"suffix")
+                    dvs.set(u"suffixName", u"")
+                else:
+                    dv.set(u"suffixed", u"yes")
+                    dvs = ET.SubElement(dv, u"suffix")
+                    dvs.set(u"suffixName", u"{}".format(dv_sfx_name))
+                    dvs.text = dv_sfx
+
+                if dv_rfx == True:
+                    dv.set(u"reflexive", u"yes")
+                else:
+                    dv.set(u"reflexive", u"no")
+
+                if dv_sec == True:
+                    dv.set(u"secondary", u"yes")
+                else:
+                    dv.set(u"secondary", u"no")
+
+                dvf = ET.SubElement(dv, u"fullVerb")
+                dvf.text = derived_verb
+
+                ## create <query> element
+                qe = ET.SubElement(dv, u"query")
+                qe.set(u"subcorpus", u'modern')
+                qe.set(u"successful", u"no")
+                qe.set(u"dateCreated", u"{}".format(date_created))
+                qe.set(u"timeCreated", u"{}".format(time_created))
+
+                ## add a <results> element, but don't populate it yet
+                rs = ET.SubElement(qe, u"results")
+
+    def search_modern(self, bv, dv, gramm_cat="praet", end_year=1899):
+        """Search the modern subcorpus for the contents of a <derivedVerb>.
+
+        Parameters
+        ----------
+          bv (ET.Element): a base verb element (parent of dv)
+          dv (ET.Element): a derived verb element (child of bv)
+          gramm_cat (str): grammatical category to search for
+          end_year (int): limit searches to sources created prior to this year
+        """
+
+        qu = dv.find(u'query')
+        if qu is None:
+            qu = ET.SubElement(dv, u'query')
+
+        if qu.get(u'successful') == u'no':
+
+            rs = qu.find(u'results')
+            if rs is None:
+                rs = ET.SubElement(qu, u'results')
+
+            base_verb = bv.get(u'simplex')
+            pfx_status = dv.get(u'prefixed')
+            sfx_status = dv.get(u'suffixed')
+            ## get prefix information
+            pfxe = dv.find(u'prefix')
+            pfx_name = pfxe.get(u'prefixName')
+            pfx = pfxe.text
+            ## get suffix information
+            sfxe = dv.find(u'suffix')
+            sfx_name = sfxe.get(u'suffixName')
+            sfx = sfxe.text
+            ## get full verb information
+            fve = dv.find(u'fullVerb')
+            full_verb = fve.text
+
+            query = RNCQueryModern(
+                lex1=full_verb.encode('utf-8'),
+                gramm1=gramm_cat.encode('utf-8'),
+                end_year=u"{}".format(end_year).encode('utf-8')
+            )
+            search = RNCSearch(
+                rnc_query=query,
+                subcorpus=u"modern".encode('utf-8'),
+                pfx_val=pfx_status.encode('utf-8'),
+                prefix=pfx_name.encode('utf-8'),
+                sfx_val=sfx_status.encode('utf-8'),
+                ## the next line raises an AttributeError if sfx is None
+                #suffix=sfx.encode('utf-8'),
+                suffix=sfx,
+                lem=full_verb.encode('utf-8'),
+                gramm_cat=gramm_cat.encode('utf-8'),
+                base_verb=base_verb.encode('utf-8')
+                )
+            search.scrape_pages()
+            for d in search.all_search_results:
+                for i in range(d[13]+1):
+                    re = ET.SubElement(rs, u'result')
+                    re.set(u'pageIndex', u"{}".format(d[14]))
+                    sn = ET.SubElement(re, u'sourceName')
+                    sn.text = u"{}".format(d[9])
+                    sn.set(u'begDate', u"{}".format(d[10]))
+                    sn.set(u'centerDate', u"{}".format(d[11]))
+                    sn.set(u'endDate', u"{}".format(d[12]))
+            q = dv.find(u'query')
+            q.set(u'successful', u'yes')
+
+    def check(self):
+        """Print XML as string to console."""
+        xmlstr = ET.tostring(self.root, encoding='utf8', method='xml')
+        print xmlstr
+
+    def write(self):
+        """Save XML to disk."""
+        tree = ET.ElementTree(self.root)
+        tree.write(self.file_name, encoding='utf-8', xml_declaration=True)
+
+    def run(self):
+        """Run all possible searches of <derivedVerb> elements."""
+        pass
 
 class ResultsSpreadsheet(openpyxl.Workbook):
     """Excel spreadsheet containing search results."""
@@ -79,8 +319,6 @@ class ResultsSpreadsheet(openpyxl.Workbook):
           dict_contents: a dictionary in which the keys are column numbers
             and the values are the corresponding contents, e.g., {1: 'Modern'}.
         """
-
-
         print "ROW:\t{}".format(row_idx)
         for k, v in dict_contents.iteritems():
             c = self.active.cell(row=row_idx, column=k)
@@ -683,6 +921,7 @@ class RNCSearchTerm(object):
                 rv = RussianVerb(simplex_verb=verb_form)
                 for pfx, vb in rv.all_forms_by_prefix.iteritems():
                     for v in vb:
+
                         query = RNCQueryAncient(
                             lexi1=v, gramm1=gramm_form
                             )
@@ -820,6 +1059,7 @@ class RNCSearchTerm(object):
                             lem=v, gramm_cat=gramm_form,
                             base_verb=verb_form
                             )
+
                         search.scrape_pages()
 
                         #if self.rs:
@@ -891,7 +1131,68 @@ def main():
                 print u"{}, ".format(itm),
             print u""
 
+def main_two():
+    x = SearchList(file_name='xmltest.xml')
+    x.check()
+    x.write()
+
+def build_xml_search_list(xml_name):
+    xl = SearchList(file_name=xml_name)
+    if xl.exists == True:
+        print "SearchList exists!"
+    if xl.exists == False:
+        print "SearchList doesn't exist, so we're creating one."
+    xl.check()
+    for p in [u'по', u'вз', u'под', u'с', u'пере']:
+        base_verb = u"делать"
+        derived_verb = p + base_verb
+        dv_pfx = p
+        dv_pfx_name = u"{}-".format(p)
+        dv_sfx = u'ай'
+        dv_sfx_name = u'-aj-'
+        xl.add_search_to_list(base_verb=base_verb,
+                              derived_verb=derived_verb, dv_pfx=dv_pfx,
+                              dv_pfx_name=dv_pfx_name, dv_sfx=dv_sfx,
+                              dv_sfx_name=dv_sfx_name, subcorpus="modern",
+                              dv_rfx=False)
+    xl.check()
+    xl.write()
+
+def create_real_search_list(xml_name):
+    """Build an XML search list from RussianVerb objects."""
+    verbs = ["драть"]
+    for verb in verbs:
+        rv = RussianVerb(simplex_verb=verb)
+        for pfx_name, pfx_list in rv.prefixes.iteritems():
+            for pfx in pfx_list:
+                sl = SearchList(file_name=xml_name)
+                sl.add_search_to_list(
+                    base_verb=to_unicode_or_bust(rv.root),
+                    derived_verb=to_unicode_or_bust(pfx + rv.root),
+                    dv_pfx=to_unicode_or_bust(pfx),
+                    dv_pfx_name=to_unicode_or_bust(pfx_name)
+                )
+                # sl.check()
+                sl.write()
+
+def run_for_real(xml_name):
+
+    while True:
+        s = SearchList(file_name=xml_name)
+        for bv in s.root.findall(u'baseVerb'):
+            for dv in bv.findall(u'derivedVerb'):
+                s.search_modern(bv=bv, dv=dv)
+                s.write()
+                time.sleep(5)
+
+        if s.root.findall(u'.//[@successful=no]')) is None:
+            break
+
 
 
 if __name__ == "__main__":
-    main()
+    #main_two()
+    #build_xml_search_list(xml_name="test_search_list.xml")
+    xml_fn = "actual_test.xml"
+    create_real_search_list(xml_name=xml_fn)
+    run_for_real(xml_name=xml_fn)
