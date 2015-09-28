@@ -141,6 +141,7 @@ class SearchList(object):
             dv_rfx=True
 
         bv_exists = False
+        lb = len(self.root.findall(u'baseVerb'))
         for verb in self.root.findall(u'baseVerb'):
             if verb.get(u'simplex') == base_verb:
                 bv = verb
@@ -157,6 +158,7 @@ class SearchList(object):
         if bv_exists == True:
 
             dv_exists = False
+            ld = len(bv.findall(u'derivedVerb'))
             for dverb in bv.findall(u'derivedVerb'):
                 for fdv in dverb.findall(u'fullVerb'):
                     if fdv.text is not None:
@@ -1176,7 +1178,6 @@ def create_real_search_list(xml_name):
                 sl.write()
 
 def run_for_real(xml_name):
-
     while True:
         s = SearchList(file_name=xml_name)
         for bv in s.root.findall(u'baseVerb'):
@@ -1185,9 +1186,8 @@ def run_for_real(xml_name):
                 s.write()
                 time.sleep(5)
 
-        if s.root.findall(u'.//[@successful=no]')) is None:
+        if s.root.findall(u'.//[@successful=no]') is None:
             break
-
 
 
 if __name__ == "__main__":
