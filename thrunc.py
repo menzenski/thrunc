@@ -270,7 +270,7 @@ class SearchList(object):
                 )
             search.scrape_pages()
             for d in search.all_search_results:
-                for i in range(d[13]+1):
+                for i in range(d[13]):
                     re = ET.SubElement(rs, u'result')
                     re.set(u'pageIndex', u"{}".format(d[14]))
                     sn = ET.SubElement(re, u'sourceName')
@@ -1162,7 +1162,7 @@ def build_xml_search_list(xml_name):
 
 def create_real_search_list(xml_name):
     """Build an XML search list from RussianVerb objects."""
-    verbs = ["драть"]
+    verbs = ["драть", "баюкать"]
     for verb in verbs:
         rv = RussianVerb(simplex_verb=verb)
         for pfx_name, pfx_list in rv.prefixes.iteritems():
@@ -1178,17 +1178,19 @@ def create_real_search_list(xml_name):
                 sl.write()
 
 def run_for_real(xml_name):
-    while True:
+    more_searches = True
+    while more_searches:
         s = SearchList(file_name=xml_name)
         for bv in s.root.findall(u'baseVerb'):
             for dv in bv.findall(u'derivedVerb'):
-                s.search_modern(bv=bv, dv=dv)
-                s.write()
-                time.sleep(5)
+                if dv.find(u'query').get(u'successful') == u'no':
+                    s.search_modern(bv=bv, dv=dv)
+                    s.write()
+                    time.sleep(5)
 
-        if s.root.findall(u'.//[@successful=no]') is None:
-            break
-
+        if all(e.get(u'successful') == u'yes' for e in s.root.findall(
+                u'baseVerb/derivedVerb/query')):
+            more_searches = False
 
 if __name__ == "__main__":
     #main_two()
