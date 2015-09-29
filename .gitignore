@@ -1,6 +1,7 @@
 # input and output files
 *.txt
 *.xlsx
+*.xsl
 *.xml
 *.db
 

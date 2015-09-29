@@ -37,6 +37,7 @@
 
 from urllib import FancyURLopener
 from bs4 import BeautifulSoup as Soup
+from lxml import html
 import re
 import sys
 import time
@@ -90,6 +91,44 @@ class SearchList(object):
             self.root = ET.Element("searchList")
             print "Search XML file didn't exist, so I made one."
             self.exists = False
+
+    def add_results(self, url):
+        """Return the number documents and contexts from an RNC search.
+
+        Parameters
+        ----------
+          url (str): url for the first page of RNC results (...&p=0)
+
+        Returns
+        -------
+          d, c (tup): number of result sources and total tokens
+            d / tup[0] (int): number of distinct documents / sources
+            c / tup[1] (int): total number of contexts / tokens
+
+        Sample output
+        -------------
+          'Found 316 documents, 434 contexts.'
+          d, c = (316, 434)
+        """
+        p = Webpage(address=url)
+
+        tree = html.fromstring(p.html)
+
+        documents = tree.xpath('/html/body/div[3]/p[4]/span[1]/text()')
+        contexts = tree.xpath('/html/body/div[3]/p[4]/span[3]/text()')
+
+        try:
+            d = int(documents[0])
+        except IndexError:
+            d = 0
+
+        try:
+            c = int(contexts[0])
+        except IndexError:
+            c = 0
+
+        print u"Found {} documents, {} contexts.".format(d, c)
+        return d, c
 
     def add_search_to_list(self, base_verb=u"", derived_verb=u"",
                            dv_pfx=u"", dv_pfx_name=u"", dv_sfx=u"",
@@ -211,9 +250,6 @@ class SearchList(object):
                 qe.set(u"dateCreated", u"{}".format(date_created))
                 qe.set(u"timeCreated", u"{}".format(time_created))
 
-                ## add a <results> element, but don't populate it yet
-                rs = ET.SubElement(qe, u"results")
-
     def search_modern(self, bv, dv, gramm_cat="praet", end_year=1899):
         """Search the modern subcorpus for the contents of a <derivedVerb>.
 
@@ -268,7 +304,13 @@ class SearchList(object):
                 gramm_cat=gramm_cat.encode('utf-8'),
                 base_verb=base_verb.encode('utf-8')
                 )
+
             search.scrape_pages()
+
+            rt = self.add_results(url=search.address)
+            rs.set(u"expectedDocuments", u"{}".format(rt[0]))
+            rs.set(u"expectedContexts", u"{}".format(rt[1]))
+
             for d in search.all_search_results:
                 for i in range(d[13]):
                     re = ET.SubElement(rs, u'result')
@@ -792,16 +834,16 @@ class RussianVerb(object):
             'pere-': ['пере', 'пре', 'прѣ'],
             'pro-': ['про'],
             'u-': ['у', 'ѹ', '', 'ꙋ'],
-            'na-': ['на'],
             # goal prefixes
+            'na-': ['на'],
             'v-': ['в', 'во', 'въ'],
             'pri-': ['при'],
             'za-': ['за'],
             'do-': ['до'],
+            'pod-': ['под', 'подо', 'подъ'],
             's-': ['с', 'со', 'съ'],
             # source prefixes
             'iz-': ['из', 'изо', 'изъ'],
-            'vy-': ['вы'],
             'ot-': ['от', 'ото', 'отъ'],
             'voz-': [
                 'вз', 'вс', 'воз', 'вос', 'взо', 'взъ',
@@ -809,6 +851,7 @@ class RussianVerb(object):
                 ],
             'raz-': ['раз', 'рас', 'разо', 'разъ'],
             # po
+            'vy-': ['вы'],
             'po-': ['по'],
             }
 
@@ -1162,7 +1205,7 @@ def build_xml_search_list(xml_name):
 
 def create_real_search_list(xml_name):
     """Build an XML search list from RussianVerb objects."""
-    verbs = ["драть", "баюкать"]
+    verbs = ["драть"]
     for verb in verbs:
         rv = RussianVerb(simplex_verb=verb)
         for pfx_name, pfx_list in rv.prefixes.iteritems():
