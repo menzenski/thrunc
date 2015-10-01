@@ -118,12 +118,12 @@ class SearchList(object):
         contexts = tree.xpath('/html/body/div[3]/p[4]/span[3]/text()')
 
         try:
-            d = int(documents[0])
+            d = int(documents[0].replace(' ', ''))
         except IndexError:
             d = 0
 
         try:
-            c = int(contexts[0])
+            c = int(contexts[0].replace(' ', ''))
         except IndexError:
             c = 0
 
@@ -1205,7 +1205,7 @@ def build_xml_search_list(xml_name):
 
 def create_real_search_list(xml_name):
     """Build an XML search list from RussianVerb objects."""
-    verbs = ["драть"]
+    verbs = ["читать", "читывать", "читаться", "читываться"]
     for verb in verbs:
         rv = RussianVerb(simplex_verb=verb)
         for pfx_name, pfx_list in rv.prefixes.iteritems():
@@ -1238,6 +1238,6 @@ def run_for_real(xml_name):
 if __name__ == "__main__":
     #main_two()
     #build_xml_search_list(xml_name="test_search_list.xml")
-    xml_fn = "actual_test.xml"
+    xml_fn = "pa_test.xml"
     create_real_search_list(xml_name=xml_fn)
     run_for_real(xml_name=xml_fn)
