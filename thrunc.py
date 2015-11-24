@@ -131,8 +131,8 @@ class SearchList(object):
         return d, c
 
     def add_search_to_list(self, base_verb=u"", derived_verb=u"",
-                           dv_pfx=u"", dv_pfx_name=u"", dv_sfx=u"",
-                           dv_sfx_name=u"", dv_sec=False, dv_rfx=False):
+                           dv_pfx=u"", dv_pfx_name=u"", dv_sec=False,
+                           dv_rfx=False):
         """Add an element to the XML file containing a new search query.
 
         Parameters
@@ -144,11 +144,7 @@ class SearchList(object):
           df_pfx (unicode): specific form of the prefix occurring on the given
             derived verb (e.g., надо in надобрать)
           df_pfx_name (unicode): 'standard' or 'referring' name of the prefix
-            occurring on the given verb
-          df_sfx (unicode): specific form of the suffix occurring on the given
-            derived verb (e.g., ыва in перечитывать)
-          df_sfx_name (unicode): 'standard' or 'referring' name of the suffix
-            occurring on the given verb (e.g., '-yva-' for перечитывать)
+            occurring on the given verb (e.g., nad- in надобрать)
           subcorpus (unicode): name of the subcorpus in which the search will
             take place (i.e., u'Modern', u'Old', or u'Ancient')
           dv_sec (boolean): True if secondary imperfective, False otherwise
@@ -158,8 +154,10 @@ class SearchList(object):
         -------
           If a <baseVerb> element does not exist (as a child of the root) with
             @simplex="base_verb", one is created.
-          If a <derivedVerb> element does not exist (as a child of the baseVerb
-            element), one is created.
+          If a <derivedVerbCluster> element does not exist (as a child of the
+            baseVerb element), one is created.
+          If a <derivedVerb> element does not exist (as a child of the
+            derivedVerbCluster element), one is created.
 
         Sample output
         -------------
@@ -173,20 +171,23 @@ class SearchList(object):
               </derivedVerb>
           </baseVerb>
         """
+
+        ## TODO: update 'sample output' in the docstring above
+
         date_created = to_unicode_or_bust(time.strftime("%Y-%m-%d"))
         time_created = to_unicode_or_bust(time.strftime("%H:%M:%S %Z"))
 
         if derived_verb.endswith(u"ся") or derived_verb.endswith(u"сь"):
             dv_rfx=True
 
-        bv_exists = False
+        bv_exists = False ## assume base verb doesn't have an entry yet
         lb = len(self.root.findall(u'baseVerb'))
         for verb in self.root.findall(u'baseVerb'):
             if verb.get(u'simplex') == base_verb:
-                bv = verb
+                bv = verb ## found an entry for base verb
                 bv_exists = True
 
-        if bv_exists == False:
+        if bv_exists == False: ## no entry for base verb, so make one
             bv = ET.SubElement(self.root, u"baseVerb")
             bv.set(u"idx", u"{}".format(lb + 1))
             bv.set(u"simplex", u"{}".format(base_verb))
@@ -194,61 +195,68 @@ class SearchList(object):
             bv.set(u"timeCreated", u"{}".format(time_created))
             bv_exists = True
 
-        if bv_exists == True:
+        if bv_exists == True: ## now look for the derived verb cluster
+            ## created dvc with idx, dateCreated, timeCreated, pfxForm
+            dvc_exists = False ## assume that derivedVerbCluster doesn't exist
+            ldc = len(bv.findall(u'derivedVerbCluster'))
+            for dvcluster in bv.findall(u'derivedVerbCluster'):
+                if dvcluster.get(u'pfxForm') is not None:
+                    if dvcluster.get(u'pfxForm') == dv_pfx:
+                        dvc_exists = True
 
-            dv_exists = False
-            ld = len(bv.findall(u'derivedVerb'))
-            for dverb in bv.findall(u'derivedVerb'):
-                for fdv in dverb.findall(u'fullVerb'):
-                    if fdv.text is not None:
-                        if fdv.text == derived_verb:
-                            dv_exists = True
+            if dvc_exists == False:
+                dvc = ET.SubElement(bv, u'derivedVerbCluster')
+                dvc.set(u'idx', u'{}'.format(ldc + 1))
+                dvc.set(u'dateCreated', u'{}'.format(date_created))
+                dvc.set(u'timeCreated', u'{}'.format(time_created))
+                dvc.set(u'pfxForm', u'{}'.format(dv_pfx))
+                dvc_exists = True
 
-            if dv_exists == False:
-                dv = ET.SubElement(bv, u"derivedVerb")
-                dv.set(u"idx", u"{}".format(ld + 1))
-                dv.set(u"dateCreated", u"{}".format(date_created))
-                dv.set(u"timeCreated", u"{}".format(time_created))
+            if dvc_exists == True:
 
-                if dv_pfx == u"":
-                    dv.set(u"prefixed", u"no")
-                    dvp = ET.SubElement(dv, u"prefix")
-                    dvp.set(u"prefixName", u"")
-                else:
-                    dv.set(u"prefixed", u"yes")
-                    dvp = ET.SubElement(dv, u"prefix")
-                    dvp.set(u"prefixName", u"{}".format(dv_pfx_name))
-                    dvp.text = dv_pfx
+                dv_exists = False
+                ld = len(dvc.findall(u'derivedVerb'))
+                for dverb in dvc.findall(u'derivedVerb'):
+                    for fdv in dverb.findall(u'fullVerb'):
+                        if fdv.text is not None:
+                            if fdv.text == derived_verb:
+                                dv_exists = True
 
-                if dv_sfx == u"":
-                    dv.set(u"suffixed", u"no")
-                    dvs = ET.SubElement(dv, u"suffix")
-                    dvs.set(u"suffixName", u"")
-                else:
-                    dv.set(u"suffixed", u"yes")
-                    dvs = ET.SubElement(dv, u"suffix")
-                    dvs.set(u"suffixName", u"{}".format(dv_sfx_name))
-                    dvs.text = dv_sfx
+                if dv_exists == False:
+                    dv = ET.SubElement(dvc, u"derivedVerb")
+                    dv.set(u"idx", u"{}".format(ld + 1))
+                    dv.set(u"dateCreated", u"{}".format(date_created))
+                    dv.set(u"timeCreated", u"{}".format(time_created))
 
-                if dv_rfx == True:
-                    dv.set(u"reflexive", u"yes")
-                else:
-                    dv.set(u"reflexive", u"no")
+                    if dv_pfx == u"":
+                        dv.set(u"prefixed", u"no")
+                        dvp = ET.SubElement(dv, u"prefix")
+                        dvp.set(u"prefixName", u"")
+                    else:
+                        dv.set(u"prefixed", u"yes")
+                        dvp = ET.SubElement(dv, u"prefix")
+                        dvp.set(u"prefixName", u"{}".format(dv_pfx_name))
+                        dvp.text = dv_pfx
 
-                if dv_sec == True:
-                    dv.set(u"secondary", u"yes")
-                else:
-                    dv.set(u"secondary", u"no")
+                    if dv_rfx == True:
+                        dv.set(u"reflexive", u"yes")
+                    else:
+                        dv.set(u"reflexive", u"no")
 
-                dvf = ET.SubElement(dv, u"fullVerb")
-                dvf.text = derived_verb
+                    if dv_sec == True:
+                        dv.set(u"secondary", u"yes")
+                    else:
+                        dv.set(u"secondary", u"no")
 
-                ## create <query> element
-                qe = ET.SubElement(dv, u"query")
-                qe.set(u"subcorpus", u'modern')
-                qe.set(u"successful", u"no")
-                qe.set(u"dateCreated", u"{}".format(date_created))
-                qe.set(u"timeCreated", u"{}".format(time_created))
+                    dvf = ET.SubElement(dv, u"fullVerb")
+                    dvf.text = derived_verb
+
+                    ## create <query> element
+                    qe = ET.SubElement(dv, u"query")
+                    qe.set(u"subcorpus", u'modern')
+                    qe.set(u"successful", u"no")
+                    qe.set(u"dateCreated", u"{}".format(date_created))
+                    qe.set(u"timeCreated", u"{}".format(time_created))
 
     def search_modern(self, bv, dv, gramm_cat="praet", end_year=1899):
         """Search the modern subcorpus for the contents of a <derivedVerb>.
@@ -1212,7 +1220,7 @@ def create_real_search_list(xml_name):
             for pfx in pfx_list:
                 sl = SearchList(file_name=xml_name)
                 sl.add_search_to_list(
-                    base_verb=to_unicode_or_bust(rv.root),
+                    #base_verb=to_unicode_or_bust(rv.root),
                     derived_verb=to_unicode_or_bust(pfx + rv.root),
                     dv_pfx=to_unicode_or_bust(pfx),
                     dv_pfx_name=to_unicode_or_bust(pfx_name)
@@ -1225,19 +1233,20 @@ def run_for_real(xml_name):
     while more_searches:
         s = SearchList(file_name=xml_name)
         for bv in s.root.findall(u'baseVerb'):
-            for dv in bv.findall(u'derivedVerb'):
-                if dv.find(u'query').get(u'successful') == u'no':
-                    s.search_modern(bv=bv, dv=dv)
-                    s.write()
-                    time.sleep(5)
+            for dvc in bv.findall(u'derivedVerbCluster'):
+                for dv in bv.findall(u'derivedVerb'):
+                    if dv.find(u'query').get(u'successful') == u'no':
+                        s.search_modern(bv=bv, dv=dv)
+                        s.write()
+                        time.sleep(5)
 
         if all(e.get(u'successful') == u'yes' for e in s.root.findall(
-                u'baseVerb/derivedVerb/query')):
+                u'baseVerb/derivedVerbCluster/derivedVerb/query')):
             more_searches = False
 
 if __name__ == "__main__":
     #main_two()
     #build_xml_search_list(xml_name="test_search_list.xml")
-    xml_fn = "pa_test.xml"
+    xml_fn = "withcluster_test.xml"
     create_real_search_list(xml_name=xml_fn)
-    run_for_real(xml_name=xml_fn)
+    #run_for_real(xml_name=xml_fn)

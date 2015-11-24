@@ -1,3 +1,6 @@
+# swap files
+.*.py.swp
+
 # input and output files
 *.txt
 *.xlsx
